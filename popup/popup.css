@@ -1,0 +1,214 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 340px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #fff;
+}
+
+/* ── Header ── */
+
+.header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.app-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.current-tab {
+  font-size: 13px;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  color: #555;
+}
+
+/* ── Group list ── */
+
+.group-list {
+  list-style: none;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.group-item:hover {
+  background: #f7f7f7;
+}
+
+.group-label {
+  font-family: monospace;
+  font-size: 12px;
+  color: #1a1a1a;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strategy-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #aaa;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.group-count {
+  font-size: 12px;
+  color: #888;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* ── Checklist ── */
+
+.checklist {
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.check-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.check-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.check-item label:hover {
+  background: #f7f7f7;
+}
+
+.check-item.non-interactive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+}
+
+.check-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.check-dot.is-current {
+  background: #888;
+}
+
+.check-item input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: #333;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.check-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: #888;
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* ── Actions ── */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+}
+
+.btn-primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #333;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #1a1a1a;
+}
+
+.btn-secondary:hover {
+  background: #e4e4e4;
+}
+
+/* ── Empty state ── */
+
+.empty {
+  color: #aaa;
+  text-align: center;
+  font-size: 12px;
+  padding-top: 6px;
+}
