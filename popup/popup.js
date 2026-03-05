@@ -111,8 +111,8 @@ function renderGroupList(app, activeTab, groups, checkState) {
   setKeyHandler(e => {
     const items = [...app.querySelectorAll('.group-item')];
     const cur = items.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
+    if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
+    else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
     else if (e.key === 'Escape') window.close();
   });
 }
@@ -206,13 +206,13 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     ].filter(Boolean);
     const cur = navItems.indexOf(document.activeElement);
 
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown' || e.key === 'j') {
       e.preventDefault();
       navItems[(cur + 1) % navItems.length]?.focus();
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp' || e.key === 'k') {
       e.preventDefault();
       navItems[(cur - 1 + navItems.length) % navItems.length]?.focus();
-    } else if (e.key === 'Enter' && document.activeElement?.type === 'checkbox') {
+    } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
     } else if (e.key === 'Escape') {
       e.preventDefault();
