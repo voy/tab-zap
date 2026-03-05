@@ -60,6 +60,8 @@ function renderEmpty(app, activeTab) {
 }
 
 function renderGroupList(app, activeTab, groups, checkState) {
+  let focusedIndex = 0;
+
   app.innerHTML = `
     <div class="header">
       <div class="app-title">Current Tab</div>
@@ -70,7 +72,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         const isFirstRecency = g.strategy === 'recency' && (i === 0 || groups[i - 1].strategy !== 'recency');
         return `
         ${isFirstRecency ? '<li class="group-divider"></li>' : ''}
-        <li class="group-item" data-index="${i}">
+        <li class="group-item${i === 0 ? ' group-item--focused' : ''}" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${esc(g.label)}</span>
           <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab') ? g.tabs.length : g.tabs.length + 1} tabs</span>
@@ -82,9 +84,17 @@ function renderGroupList(app, activeTab, groups, checkState) {
     </div>
   `;
 
+  function setFocus(i) {
+    const items = app.querySelectorAll('.group-item');
+    items[focusedIndex]?.classList.remove('group-item--focused');
+    focusedIndex = (i + items.length) % items.length;
+    items[focusedIndex]?.classList.add('group-item--focused');
+  }
+
   app.querySelectorAll('.group-item').forEach(el => {
     const i = parseInt(el.dataset.index);
     el.addEventListener('click', () => renderChecklist(app, activeTab, groups[i], groups, i, checkState));
+    el.addEventListener('mouseenter', () => setFocus(i));
   });
 
   app.querySelector('#close-one-btn').addEventListener('click', async () => {
@@ -93,7 +103,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
   });
 
   setKeyHandler(e => {
-    if (e.key === 'Escape') window.close();
+    if (e.key === 'ArrowDown') { e.preventDefault(); setFocus(focusedIndex + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus(focusedIndex - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); renderChecklist(app, activeTab, groups[focusedIndex], groups, focusedIndex, checkState); }
+    else if (e.key === 'Escape') window.close();
   });
 }
 
