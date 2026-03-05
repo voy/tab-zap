@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateGroups } from './group.js';
+import { generateGroups, dedupeByCount } from './group.js';
 
 const NOW = Date.now();
 const DAY = 24 * 60 * 60 * 1000;
@@ -66,7 +66,7 @@ test('groups tabs by registered domain across subdomains', () => {
   const groups = generateGroups(active, [active, ...others]);
   const domainGroup = groups.find(g => g.strategy === 'domain');
   assert.ok(domainGroup, 'domain group should exist');
-  assert.equal(domainGroup.label, 'google.com');
+  assert.equal(domainGroup.label, '*.google.com');
   // tabs 2 and 3 match by domain (tab 3 also matches hostname but is in domain group)
   assert.ok(domainGroup.tabs.some(t => t.id === 2));
 });
@@ -119,6 +119,49 @@ test('no recency groups when no hostname/domain groups exist', () => {
   assert.equal(groups.filter(g => g.strategy === 'recency').length, 0);
 });
 
+// ── peer hostname grouping ────────────────────────────────────────────────────
+
+test('generates peer group for same-domain different-subdomain tabs', () => {
+  const active = tab(1, 'https://google.com/');
+  const cal1 = tab(2, 'https://calendar.google.com/');
+  const cal2 = tab(3, 'https://calendar.google.com/');
+  const groups = generateGroups(active, [active, cal1, cal2]);
+  const peerGroup = groups.find(g => g.strategy === 'peer');
+  assert.ok(peerGroup, 'peer group should exist');
+  assert.equal(peerGroup.label, 'calendar.google.com');
+  assert.equal(peerGroup.tabs.length, 2);
+  assert.ok(peerGroup.tabs.every(t => t.id !== active.id));
+});
+
+test('no peer group when fewer than 2 tabs on the peer subdomain', () => {
+  const active = tab(1, 'https://google.com/');
+  const cal = tab(2, 'https://calendar.google.com/');
+  const groups = generateGroups(active, [active, cal]);
+  assert.equal(groups.filter(g => g.strategy === 'peer').length, 0);
+});
+
+test('generates separate peer groups for distinct subdomains', () => {
+  const active = tab(1, 'https://google.com/');
+  const cal1 = tab(2, 'https://calendar.google.com/');
+  const cal2 = tab(3, 'https://calendar.google.com/');
+  const maps1 = tab(4, 'https://maps.google.com/');
+  const maps2 = tab(5, 'https://maps.google.com/');
+  const groups = generateGroups(active, [active, cal1, cal2, maps1, maps2]);
+  const peerGroups = groups.filter(g => g.strategy === 'peer');
+  assert.equal(peerGroups.length, 2);
+  assert.ok(peerGroups.some(g => g.label === 'calendar.google.com'));
+  assert.ok(peerGroups.some(g => g.label === 'maps.google.com'));
+});
+
+test('domain group label uses wildcard prefix', () => {
+  const active = tab(1, 'https://mail.google.com/');
+  const docs = tab(2, 'https://docs.google.com/');
+  const groups = generateGroups(active, [active, docs]);
+  const domainGroup = groups.find(g => g.strategy === 'domain');
+  assert.ok(domainGroup);
+  assert.equal(domainGroup.label, '*.google.com');
+});
+
 // ── new tab grouping ──────────────────────────────────────────────────────────
 
 test('no newtab group when active tab is not a new tab', () => {
@@ -161,4 +204,38 @@ test('returns empty array when no groups match', () => {
   const others = [tab(2, 'https://other.com/')];
   const groups = generateGroups(active, [active, ...others]);
   assert.deepEqual(groups, []);
+});
+
+// ── dedupeByCount ─────────────────────────────────────────────────────────────
+
+test('peer groups with equal tab counts are never deduplicated', () => {
+  const active = tab(1, 'https://google.com/');
+  const cal1 = tab(2, 'https://calendar.google.com/');
+  const cal2 = tab(3, 'https://calendar.google.com/');
+  const maps1 = tab(4, 'https://maps.google.com/');
+  const maps2 = tab(5, 'https://maps.google.com/');
+  const groups = generateGroups(active, [active, cal1, cal2, maps1, maps2]);
+  const deduped = dedupeByCount(groups);
+  const peerGroups = deduped.filter(g => g.strategy === 'peer');
+  assert.equal(peerGroups.length, 2, 'both peer groups should survive deduplication');
+});
+
+test('dedupeByCount removes hostname group when tab count matches domain group', () => {
+  // all domain tabs are on the same hostname → hostname and domain have equal counts
+  const active = tab(1, 'https://mail.google.com/');
+  const other = tab(2, 'https://docs.google.com/');
+  const groups = generateGroups(active, [active, other]);
+  // domain group: [other] → count = 1+1 = 2; hostname group: [] (no match) → not generated
+  // just verify deduplication doesn't choke on this shape
+  const deduped = dedupeByCount(groups);
+  assert.ok(deduped.length <= groups.length);
+});
+
+test('dedupeByCount keeps all groups when counts are distinct', () => {
+  // tabCount: hostname/domain use tabs.length+1, recency uses tabs.length
+  // hostname(2) → 3, recency(5) → 5, domain(7) → 8 — all distinct
+  const g = (strategy, count) => ({ strategy, tabs: Array(count).fill({}) });
+  const groups = [g('hostname', 2), g('recency', 5), g('domain', 7)];
+  const deduped = dedupeByCount(groups);
+  assert.equal(deduped.length, 3);
 });

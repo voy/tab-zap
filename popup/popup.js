@@ -1,7 +1,8 @@
-import { generateGroups } from '../src/group.js';
+import { generateGroups, dedupeByCount } from '../src/group.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
+  peer:     { text: 'host', tip: 'All tabs on this hostname' },
   domain:   { text: 'site', tip: 'All tabs on the same site (across subdomains)' },
   recency:  { text: 'age',  tip: 'Tabs not accessed recently' },
   newtab:   { text: 'new',  tip: 'New tab pages that were never used' },
@@ -51,17 +52,15 @@ function renderEmpty(app, activeTab) {
       try { await chrome.tabs.remove(activeTab.id); } catch {}
       window.close();
     });
+    app.querySelector('#close-btn').focus();
   }
 
   setKeyHandler(e => {
-    if (e.key === 'Enter') { e.preventDefault(); app.querySelector('#close-btn')?.click(); }
-    else if (e.key === 'Escape') window.close();
+    if (e.key === 'Escape') window.close();
   });
 }
 
 function renderGroupList(app, activeTab, groups, checkState) {
-  let focusedIndex = 0;
-
   app.innerHTML = `
     <div class="header">
       <div class="app-title">Current Tab</div>
@@ -72,10 +71,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
         const isFirstRecency = g.strategy === 'recency' && (i === 0 || groups[i - 1].strategy !== 'recency');
         return `
         ${isFirstRecency ? '<li class="group-divider"></li>' : ''}
-        <li class="group-item${i === 0 ? ' group-item--focused' : ''}" data-index="${i}">
+        <li class="group-item" tabindex="0" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${esc(g.label)}</span>
-          <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab') ? g.tabs.length : g.tabs.length + 1} tabs</span>
+          <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1} tabs</span>
         </li>`;
       }).join('')}
     </ul>
@@ -84,17 +83,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
     </div>
   `;
 
-  function setFocus(i) {
-    const items = app.querySelectorAll('.group-item');
-    items[focusedIndex]?.classList.remove('group-item--focused');
-    focusedIndex = (i + items.length) % items.length;
-    items[focusedIndex]?.classList.add('group-item--focused');
-  }
-
   app.querySelectorAll('.group-item').forEach(el => {
     const i = parseInt(el.dataset.index);
     el.addEventListener('click', () => renderChecklist(app, activeTab, groups[i], groups, i, checkState));
-    el.addEventListener('mouseenter', () => setFocus(i));
+    el.addEventListener('keyup', e => { if (e.key === 'Enter') el.click(); });
   });
 
   app.querySelector('#close-one-btn').addEventListener('click', async () => {
@@ -102,16 +94,19 @@ function renderGroupList(app, activeTab, groups, checkState) {
     window.close();
   });
 
+  app.querySelector('.group-item')?.focus();
+
   setKeyHandler(e => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setFocus(focusedIndex + 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus(focusedIndex - 1); }
-    else if (e.key === 'Enter') { e.preventDefault(); renderChecklist(app, activeTab, groups[focusedIndex], groups, focusedIndex, checkState); }
+    const items = [...app.querySelectorAll('.group-item')];
+    const cur = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
     else if (e.key === 'Escape') window.close();
   });
 }
 
 function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) {
-  const allGroupTabs = (group.strategy === 'recency' || group.strategy === 'newtab') ? group.tabs : [activeTab, ...group.tabs];
+  const allGroupTabs = (group.strategy === 'recency' || group.strategy === 'newtab' || group.strategy === 'peer') ? group.tabs : [activeTab, ...group.tabs];
   const savedIds = checkState.get(groupIndex);
   const hasMultipleGroups = groups.length > 1;
 
@@ -194,9 +189,10 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     window.close();
   });
 
+  app.querySelector('#close-all-btn').focus();
+
   setKeyHandler(e => {
-    if (e.key === 'Enter') { e.preventDefault(); app.querySelector('#close-all-btn')?.click(); }
-    else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       e.preventDefault();
       if (hasMultipleGroups) {
         checkState.set(groupIndex, new Set(checkedIds(app)));
@@ -229,16 +225,6 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
-function dedupeByCount(groups) {
-  const tabCount = g => g.strategy === 'recency' ? g.tabs.length : g.tabs.length + 1;
-  const seen = new Set();
-  return groups.filter(g => {
-    const n = tabCount(g);
-    if (seen.has(n)) return false;
-    seen.add(n);
-    return true;
-  });
-}
 
 function trunc(str, len) {
   if (!str) return '';

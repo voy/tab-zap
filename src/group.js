@@ -9,6 +9,18 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
+export function dedupeByCount(groups) {
+  const tabCount = g => (g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1;
+  const seen = new Set();
+  return groups.filter(g => {
+    if (g.strategy === 'peer') return true;
+    const n = tabCount(g);
+    if (seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  });
+}
+
 export function generateGroups(activeTab, allTabs) {
   const allOtherTabs = allTabs.filter(t => t.id !== activeTab.id && !t.pinned);
 
@@ -23,6 +35,7 @@ export function generateGroups(activeTab, allTabs) {
   const activeParsed = parseUrl(activeTab.url);
   const urlGroups = activeParsed ? [
     ...buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap),
+    ...buildPeerHostnameGroups(activeParsed, parsableOtherTabs, parsedMap),
     ...buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap),
   ] : [];
 
@@ -38,11 +51,27 @@ function buildHostnameGroup(activeParsed, otherTabs, parsedMap) {
   return [{ label: activeParsed.hostname, strategy: 'hostname', tabs: matches }];
 }
 
+function buildPeerHostnameGroups(activeParsed, otherTabs, parsedMap) {
+  const domainTabs = otherTabs.filter(t => {
+    const p = parsedMap.get(t.id);
+    return p.registeredDomain === activeParsed.registeredDomain && p.hostname !== activeParsed.hostname;
+  });
+  const byHostname = new Map();
+  for (const t of domainTabs) {
+    const h = parsedMap.get(t.id).hostname;
+    if (!byHostname.has(h)) byHostname.set(h, []);
+    byHostname.get(h).push(t);
+  }
+  return [...byHostname.entries()]
+    .filter(([, tabs]) => tabs.length >= MIN_GROUP_SIZE)
+    .map(([hostname, tabs]) => ({ label: hostname, strategy: 'peer', tabs }));
+}
+
 function buildRegisteredDomainGroup(activeParsed, otherTabs, parsedMap) {
   const matches = otherTabs.filter(t => parsedMap.get(t.id).registeredDomain === activeParsed.registeredDomain);
   const crossSubdomain = matches.filter(t => parsedMap.get(t.id).hostname !== activeParsed.hostname);
   if (crossSubdomain.length < 1) return [];
-  return [{ label: activeParsed.registeredDomain, strategy: 'domain', tabs: matches }];
+  return [{ label: `*.${activeParsed.registeredDomain}`, strategy: 'domain', tabs: matches }];
 }
 
 function buildNewTabGroup(activeTab, otherTabs) {
