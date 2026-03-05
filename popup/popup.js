@@ -113,7 +113,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
   app.innerHTML = `
     <div class="header">
       ${hasMultipleGroups
-        ? `<button class="back-btn">← ${esc(group.label)}</button>`
+        ? `<button class="back-btn">‹ ${esc(group.label)}</button>`
         : `<div class="app-title">Tab Zap</div>
            <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>`
       }
