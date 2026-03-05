@@ -134,7 +134,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
       }
     </div>
     <div class="actions actions-top">
-      <button class="btn btn-primary" id="close-all-btn">Close all ${allGroupTabs.length} tabs</button>
+      <button class="btn btn-primary" id="close-btn" disabled>Close checked tabs</button>
       ${allGroupTabs.some(t => t.id === activeTab.id)
         ? `<button class="btn btn-secondary" id="keep-current-btn">Keep current tab</button>`
         : `<button class="btn btn-secondary" id="close-one-btn">Close this tab</button>`}
@@ -154,9 +154,6 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
         </li>`;
       }).join('')}
     </ul>
-    <div class="actions">
-      <button class="btn btn-secondary" id="close-btn" disabled>Close checked tabs</button>
-    </div>
   `;
 
   // Attach favicon error handlers (onerror attribute is blocked by MV3 CSP)
@@ -181,11 +178,6 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     });
   }
 
-  app.querySelector('#close-all-btn').addEventListener('click', async () => {
-    try { await chrome.tabs.remove(allGroupTabs.map(t => t.id)); } catch {}
-    window.close();
-  });
-
   app.querySelector('#keep-current-btn')?.addEventListener('click', async () => {
     const toClose = allGroupTabs.filter(t => t.id !== activeTab.id).map(t => t.id);
     try { await chrome.tabs.remove(toClose); } catch {}
@@ -204,10 +196,25 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     window.close();
   });
 
-  app.querySelector('#close-all-btn').focus();
+  app.querySelector('#close-btn').focus();
 
   setKeyHandler(e => {
-    if (e.key === 'Escape') {
+    const navItems = [
+      app.querySelector('#close-btn'),
+      app.querySelector('#keep-current-btn') ?? app.querySelector('#close-one-btn'),
+      ...app.querySelectorAll('input[type=checkbox]'),
+    ].filter(Boolean);
+    const cur = navItems.indexOf(document.activeElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      navItems[(cur + 1) % navItems.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      navItems[(cur - 1 + navItems.length) % navItems.length]?.focus();
+    } else if (e.key === 'Enter' && document.activeElement?.type === 'checkbox') {
+      document.activeElement.click();
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       if (hasMultipleGroups) {
         checkState.set(groupIndex, new Set(checkedIds(app)));
