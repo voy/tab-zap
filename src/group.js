@@ -21,11 +21,13 @@ export function generateGroups(activeTab, allTabs) {
 
   const parsableOtherTabs = allOtherTabs.filter(t => parsedMap.has(t.id));
   const activeParsed = parseUrl(activeTab.url);
-  const urlGroups = activeParsed
-    ? buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap)
-    : [];
+  const urlGroups = activeParsed ? [
+    ...buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap),
+    ...buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap),
+  ] : [];
 
-  return [...urlGroups, ...buildRecencyGroups(allOtherTabs)];
+  const recencyGroups = urlGroups.length > 0 ? buildRecencyGroups(allOtherTabs) : [];
+  return [...urlGroups, ...recencyGroups];
 }
 
 
@@ -33,6 +35,13 @@ function buildHostnameGroup(activeParsed, otherTabs, parsedMap) {
   const matches = otherTabs.filter(t => parsedMap.get(t.id).hostname === activeParsed.hostname);
   if (matches.length + 1 < MIN_GROUP_SIZE) return [];
   return [{ label: activeParsed.hostname, strategy: 'hostname', tabs: matches }];
+}
+
+function buildRegisteredDomainGroup(activeParsed, otherTabs, parsedMap) {
+  const matches = otherTabs.filter(t => parsedMap.get(t.id).registeredDomain === activeParsed.registeredDomain);
+  const crossSubdomain = matches.filter(t => parsedMap.get(t.id).hostname !== activeParsed.hostname);
+  if (crossSubdomain.length < 2) return [];
+  return [{ label: activeParsed.registeredDomain, strategy: 'domain', tabs: matches }];
 }
 
 function buildRecencyGroups(otherTabs) {

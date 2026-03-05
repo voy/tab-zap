@@ -66,6 +66,12 @@ body {
   user-select: none;
 }
 
+.group-divider {
+  height: 0;
+  border-bottom: 1px solid #e8e8e8;
+  margin: 4px 0;
+}
+
 .group-item:hover {
   background: #f7f7f7;
 }

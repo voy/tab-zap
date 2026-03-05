@@ -2,6 +2,7 @@ import { generateGroups } from '../src/group.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
+  domain:   { text: 'site', tip: 'All tabs on the same site (across subdomains)' },
   recency:  { text: 'age',  tip: 'Tabs not accessed recently' },
 };
 
@@ -59,13 +60,16 @@ function renderGroupList(app, activeTab, groups, checkState) {
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
     <ul class="group-list">
-      ${groups.map((g, i) => `
+      ${groups.map((g, i) => {
+        const isFirstRecency = g.strategy === 'recency' && (i === 0 || groups[i - 1].strategy !== 'recency');
+        return `
+        ${isFirstRecency ? '<li class="group-divider"></li>' : ''}
         <li class="group-item" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${esc(g.label)}</span>
           <span class="group-count">${g.strategy === 'recency' ? g.tabs.length : g.tabs.length + 1} tabs</span>
-        </li>
-      `).join('')}
+        </li>`;
+      }).join('')}
     </ul>
     <div class="actions">
       <button class="btn btn-secondary" id="close-one-btn">Close this tab</button>
