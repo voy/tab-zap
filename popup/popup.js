@@ -4,6 +4,7 @@ const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
   domain:   { text: 'site', tip: 'All tabs on the same site (across subdomains)' },
   recency:  { text: 'age',  tip: 'Tabs not accessed recently' },
+  newtab:   { text: 'new',  tip: 'New tab pages that were never used' },
 };
 
 async function init() {
@@ -67,7 +68,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         <li class="group-item" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${esc(g.label)}</span>
-          <span class="group-count">${g.strategy === 'recency' ? g.tabs.length : g.tabs.length + 1} tabs</span>
+          <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab') ? g.tabs.length : g.tabs.length + 1} tabs</span>
         </li>`;
       }).join('')}
     </ul>
@@ -88,7 +89,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
 }
 
 function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) {
-  const allGroupTabs = group.strategy === 'recency' ? group.tabs : [activeTab, ...group.tabs];
+  const allGroupTabs = (group.strategy === 'recency' || group.strategy === 'newtab') ? group.tabs : [activeTab, ...group.tabs];
   const savedIds = checkState.get(groupIndex);
   const hasMultipleGroups = groups.length > 1;
 

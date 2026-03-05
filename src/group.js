@@ -26,8 +26,9 @@ export function generateGroups(activeTab, allTabs) {
     ...buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap),
   ] : [];
 
+  const newTabGroups = buildNewTabGroup(activeTab, allOtherTabs);
   const recencyGroups = urlGroups.length > 0 ? buildRecencyGroups(allOtherTabs) : [];
-  return [...urlGroups, ...recencyGroups];
+  return [...urlGroups, ...newTabGroups, ...recencyGroups];
 }
 
 
@@ -42,6 +43,14 @@ function buildRegisteredDomainGroup(activeParsed, otherTabs, parsedMap) {
   const crossSubdomain = matches.filter(t => parsedMap.get(t.id).hostname !== activeParsed.hostname);
   if (crossSubdomain.length < 1) return [];
   return [{ label: activeParsed.registeredDomain, strategy: 'domain', tabs: matches }];
+}
+
+function buildNewTabGroup(activeTab, otherTabs) {
+  const isNewTab = t => t.url === 'chrome://newtab/';
+  const otherNewTabs = otherTabs.filter(isNewTab);
+  const allNewTabs = isNewTab(activeTab) ? [activeTab, ...otherNewTabs] : otherNewTabs;
+  if (allNewTabs.length < MIN_GROUP_SIZE) return [];
+  return [{ label: 'unused new tabs', strategy: 'newtab', tabs: allNewTabs }];
 }
 
 function buildRecencyGroups(otherTabs) {

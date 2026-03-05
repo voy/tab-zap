@@ -119,6 +119,35 @@ test('no recency groups when no hostname/domain groups exist', () => {
   assert.equal(groups.filter(g => g.strategy === 'recency').length, 0);
 });
 
+// ── new tab grouping ──────────────────────────────────────────────────────────
+
+test('groups unused new tabs', () => {
+  const active = tab(1, 'https://github.com/');
+  const nt1 = tab(2, 'chrome://newtab/');
+  const nt2 = tab(3, 'chrome://newtab/');
+  const groups = generateGroups(active, [active, nt1, nt2]);
+  const ntGroup = groups.find(g => g.strategy === 'newtab');
+  assert.ok(ntGroup, 'newtab group should exist');
+  assert.equal(ntGroup.tabs.length, 2);
+});
+
+test('no newtab group when fewer than 2 new tabs', () => {
+  const active = tab(1, 'https://github.com/');
+  const nt = tab(2, 'chrome://newtab/');
+  const groups = generateGroups(active, [active, nt]);
+  assert.equal(groups.filter(g => g.strategy === 'newtab').length, 0);
+});
+
+test('includes active tab in newtab group when active is also a new tab', () => {
+  const active = tab(1, 'chrome://newtab/');
+  const nt = tab(2, 'chrome://newtab/');
+  const groups = generateGroups(active, [active, nt]);
+  const ntGroup = groups.find(g => g.strategy === 'newtab');
+  assert.ok(ntGroup, 'newtab group should exist');
+  assert.ok(ntGroup.tabs.some(t => t.id === active.id));
+  assert.equal(ntGroup.tabs.length, 2);
+});
+
 test('returns empty array when no groups match', () => {
   const active = tab(1, 'https://unique.com/');
   const others = [tab(2, 'https://other.com/')];
