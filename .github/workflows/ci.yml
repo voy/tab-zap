@@ -23,9 +23,11 @@ jobs:
 
       - run: npm run package
 
-      - run: mv tab-zap.zip tab-zap-${{ github.sha }}.zip
+      - run: echo "SHORT_SHA=${GITHUB_SHA::6}" >> $GITHUB_ENV
+
+      - run: mv tab-zap.zip tab-zap-${{ env.SHORT_SHA }}.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: tab-zap-${{ github.sha }}
-          path: tab-zap-${{ github.sha }}.zip
+          name: tab-zap-${{ env.SHORT_SHA }}
+          path: tab-zap-${{ env.SHORT_SHA }}.zip
