@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tab Master",
+  "name": "Tab Zap",
   "version": "0.1.0",
   "description": "Close groups of related tabs quickly",
   "permissions": ["tabs"],

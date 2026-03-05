@@ -1,4 +1,4 @@
-# Tab Master — Product Requirements Document
+# Tab Zap — Product Requirements Document
 
 ## Overview
 
@@ -66,7 +66,7 @@ When multiple groups exist, shows a list to pick from:
 
 ```
 ┌─────────────────────────────────────┐
-│ Tab Master                          │
+│ Tab Zap                             │
 │ Active: [tab title, truncated]      │
 ├─────────────────────────────────────┤
 │ HOST  github.com              5 tabs│

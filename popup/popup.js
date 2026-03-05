@@ -33,7 +33,7 @@ function renderEmpty(app, activeTab) {
   const isPinned = activeTab.pinned;
   app.innerHTML = `
     <div class="header">
-      <div class="app-title">Tab Master</div>
+      <div class="app-title">Tab Zap</div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
     <div class="actions">
@@ -56,7 +56,7 @@ function renderEmpty(app, activeTab) {
 function renderGroupList(app, activeTab, groups, checkState) {
   app.innerHTML = `
     <div class="header">
-      <div class="app-title">Tab Master</div>
+      <div class="app-title">Tab Zap</div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
     <ul class="group-list">
@@ -96,7 +96,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     <div class="header">
       ${hasMultipleGroups
         ? `<button class="back-btn">← ${esc(group.label)}</button>`
-        : `<div class="app-title">Tab Master</div>
+        : `<div class="app-title">Tab Zap</div>
            <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>`
       }
     </div>
