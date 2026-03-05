@@ -77,11 +77,12 @@ body {
   background: #f7f7f7;
 }
 
-.group-item--focused {
+.group-item:focus {
   background: #f7f7f7;
+  outline: none;
 }
 
-.group-item--focused::before {
+.group-item:focus::before {
   content: '❯';
   position: absolute;
   left: 6px;
@@ -232,4 +233,116 @@ body {
   text-align: center;
   font-size: 12px;
   padding-top: 6px;
+}
+
+/* ── Dark mode ── */
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1c1c1e;
+    color: #f0f0f0;
+  }
+
+  .header {
+    border-bottom-color: #3a3a3c;
+  }
+
+  .app-title {
+    color: #888;
+  }
+
+  .current-tab {
+    color: #f0f0f0;
+  }
+
+  .back-btn {
+    color: #f0f0f0;
+  }
+
+  .back-btn:hover {
+    color: #aaa;
+  }
+
+  .group-item {
+    border-bottom-color: #2c2c2e;
+  }
+
+  .group-divider {
+    border-bottom-color: #3a3a3c;
+  }
+
+  .group-item:hover {
+    background: #2c2c2e;
+  }
+
+  .group-item:focus {
+    background: #2c2c2e;
+  }
+
+  .group-item:focus::before {
+    color: #ccc;
+  }
+
+  .group-label {
+    color: #f0f0f0;
+  }
+
+  .strategy-badge {
+    color: #666;
+  }
+
+  .group-count {
+    color: #777;
+  }
+
+  .check-item {
+    border-bottom-color: #2c2c2e;
+  }
+
+  .check-item label:hover {
+    background: #2c2c2e;
+  }
+
+  .check-item input[type="checkbox"] {
+    accent-color: #f0f0f0;
+  }
+
+  .badge {
+    background: #555;
+  }
+
+  .actions-top {
+    border-bottom-color: #3a3a3c;
+  }
+
+  .actions {
+    border-top-color: #3a3a3c;
+  }
+
+  .btn-primary {
+    background: #f0f0f0;
+    color: #1a1a1a;
+  }
+
+  .btn-primary:hover {
+    background: #d4d4d4;
+  }
+
+  .btn-primary:disabled {
+    background: #3a3a3c;
+    color: #666;
+  }
+
+  .btn-secondary {
+    background: #2c2c2e;
+    color: #f0f0f0;
+  }
+
+  .btn-secondary:hover {
+    background: #3a3a3c;
+  }
+
+  .empty {
+    color: #666;
+  }
 }
