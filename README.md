@@ -26,6 +26,14 @@ Pick a group, then close all of them, keep just the current tab, or fine-tune wi
 - Vanilla JS / HTML / CSS
 - [`tldts`](https://github.com/nicolo-ribaudo/tldts) for eTLD+1 domain parsing
 
+## Permissions
+
+| Permission | Why |
+|------------|-----|
+| `tabs` | Read open tab URLs, titles, and last-accessed times to build groups; close tabs when requested |
+
+No data ever leaves your browser.
+
 ## License
 
 MIT

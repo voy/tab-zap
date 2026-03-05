@@ -40,7 +40,7 @@ function buildHostnameGroup(activeParsed, otherTabs, parsedMap) {
 function buildRegisteredDomainGroup(activeParsed, otherTabs, parsedMap) {
   const matches = otherTabs.filter(t => parsedMap.get(t.id).registeredDomain === activeParsed.registeredDomain);
   const crossSubdomain = matches.filter(t => parsedMap.get(t.id).hostname !== activeParsed.hostname);
-  if (crossSubdomain.length < 2) return [];
+  if (crossSubdomain.length < 1) return [];
   return [{ label: activeParsed.registeredDomain, strategy: 'domain', tabs: matches }];
 }
 

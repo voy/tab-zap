@@ -1,3 +1,5 @@
+import { parse as parseTld } from 'tldts';
+
 /**
  * @param {string} urlString
  * @returns {{ hostname: string, registeredDomain: string, pathSegments: string[] } | null}
@@ -5,10 +7,11 @@
 export function parseUrl(urlString) {
   try {
     const url = new URL(urlString);
+    if (!url.protocol.startsWith('http')) return null;
     const hostname = url.hostname.toLowerCase();
     if (!hostname) return null;
-    const parts = hostname.split('.');
-    const registeredDomain = parts.length >= 2 ? parts.slice(-2).join('.') : hostname;
+    const tld = parseTld(hostname);
+    const registeredDomain = tld.domain || hostname;
     return {
       hostname,
       registeredDomain,
