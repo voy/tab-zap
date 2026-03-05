@@ -19,13 +19,30 @@ body {
   border-bottom: 1px solid #e8e8e8;
 }
 
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
 .app-title {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #888;
-  margin-bottom: 4px;
+}
+
+.shortcut-hint {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 10px;
+  color: #bbb;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 1px 5px;
+  letter-spacing: 0;
 }
 
 .current-tab {
@@ -249,6 +266,12 @@ body {
 
   .app-title {
     color: #888;
+  }
+
+  .shortcut-hint {
+    color: #555;
+    background: #2c2c2e;
+    border-color: #3a3a3c;
   }
 
   .current-tab {

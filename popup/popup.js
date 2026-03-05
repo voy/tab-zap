@@ -8,11 +8,17 @@ const STRATEGY_LABELS = {
   newtab:   { text: 'new',  tip: 'New tab pages that were never used' },
 };
 
+let shortcutHint = '';
+
 async function init() {
   const app = document.getElementById('app');
   try {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab) return;
+
+    const commands = await chrome.commands.getAll();
+    const cmd = commands.find(c => c.name === '_execute_action');
+    shortcutHint = cmd?.shortcut ? formatShortcut(cmd.shortcut) : '';
 
     const allTabs = await chrome.tabs.query({ currentWindow: true });
     const rawGroups = generateGroups(activeTab, allTabs);
@@ -35,7 +41,10 @@ function renderEmpty(app, activeTab) {
   const isPinned = activeTab.pinned;
   app.innerHTML = `
     <div class="header">
-      <div class="app-title">Current Tab</div>
+      <div class="header-row">
+        <div class="app-title">Current Tab</div>
+        ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+      </div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
     <div class="actions">
@@ -63,7 +72,10 @@ function renderEmpty(app, activeTab) {
 function renderGroupList(app, activeTab, groups, checkState) {
   app.innerHTML = `
     <div class="header">
-      <div class="app-title">Current Tab</div>
+      <div class="header-row">
+        <div class="app-title">Current Tab</div>
+        ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+      </div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
     <ul class="group-list">
@@ -114,7 +126,10 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     <div class="header">
       ${hasMultipleGroups
         ? `<button class="back-btn">‹ ${esc(group.label)}</button>`
-        : `<div class="app-title">Tab Zap</div>
+        : `<div class="header-row">
+             <div class="app-title">Tab Zap</div>
+             ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+           </div>
            <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>`
       }
     </div>
@@ -225,6 +240,14 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+
+function formatShortcut(shortcut) {
+  return shortcut
+    .replace('Command+', '⌘')
+    .replace('Ctrl+', '⌃')
+    .replace('Alt+', '⌥')
+    .replace('Shift+', '⇧');
+}
 
 function trunc(str, len) {
   if (!str) return '';
