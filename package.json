@@ -1,8 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "build": "esbuild popup/popup.js --bundle --outfile=popup/popup.bundle.js --format=iife",
-    "watch": "esbuild popup/popup.js --bundle --outfile=popup/popup.bundle.js --format=iife --watch",
+    "build": "esbuild popup/popup.js --bundle --outfile=popup/popup.bundle.js --format=iife && esbuild background.js --bundle --outfile=background.bundle.js --format=iife",
+    "watch": "esbuild popup/popup.js --bundle --outfile=popup/popup.bundle.js --format=iife --watch & esbuild background.js --bundle --outfile=background.bundle.js --format=iife --watch",
     "build:icons": "rsvg-convert -w 16 -h 16 icons/icon.svg -o icons/icon16.png && rsvg-convert -w 48 -h 48 icons/icon.svg -o icons/icon48.png && rsvg-convert -w 128 -h 128 icons/icon.svg -o icons/icon128.png",
     "package": "npm run build && zip -r tab-zap.zip manifest.json icons/icon16.png icons/icon48.png icons/icon128.png popup/popup.html popup/popup.css popup/popup.bundle.js",
     "test": "node --test 'src/**/*.test.js'"

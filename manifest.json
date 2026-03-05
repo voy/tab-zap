@@ -3,6 +3,9 @@
   "name": "Tab Zap",
   "version": "0.1.0",
   "description": "Close groups of related tabs quickly",
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
   "permissions": ["tabs"],
   "icons": {
     "16": "icons/icon16.png",
