@@ -52,6 +52,11 @@ function renderEmpty(app, activeTab) {
       window.close();
     });
   }
+
+  setKeyHandler(e => {
+    if (e.key === 'Enter') { e.preventDefault(); app.querySelector('#close-btn')?.click(); }
+    else if (e.key === 'Escape') window.close();
+  });
 }
 
 function renderGroupList(app, activeTab, groups, checkState) {
@@ -85,6 +90,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
   app.querySelector('#close-one-btn').addEventListener('click', async () => {
     try { await chrome.tabs.remove(activeTab.id); } catch {}
     window.close();
+  });
+
+  setKeyHandler(e => {
+    if (e.key === 'Escape') window.close();
   });
 }
 
@@ -171,6 +180,26 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     try { await chrome.tabs.remove(toClose); } catch {}
     window.close();
   });
+
+  setKeyHandler(e => {
+    if (e.key === 'Enter') { e.preventDefault(); app.querySelector('#close-all-btn')?.click(); }
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (hasMultipleGroups) {
+        checkState.set(groupIndex, new Set(checkedIds(app)));
+        renderGroupList(app, activeTab, groups, checkState);
+      } else {
+        window.close();
+      }
+    }
+  });
+}
+
+let activeKeyHandler = null;
+function setKeyHandler(fn) {
+  if (activeKeyHandler) document.removeEventListener('keydown', activeKeyHandler);
+  activeKeyHandler = fn;
+  document.addEventListener('keydown', fn);
 }
 
 function checkedIds(app) {
