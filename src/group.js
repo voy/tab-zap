@@ -1,56 +1,56 @@
 import { parseUrl } from './parse.js';
 
-const MIN_GROUP_SIZE = 2; // including the active tab
+const MIN_GROUP_SIZE = 2;
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Generate ranked grouping candidates for the active tab.
  * @param {chrome.tabs.Tab} activeTab
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
 export function generateGroups(activeTab, allTabs) {
-  const activeParsed = parseUrl(activeTab.url);
-  if (!activeParsed) return [];
+  const allOtherTabs = allTabs.filter(t => t.id !== activeTab.id && !t.pinned);
 
-  const otherTabs = allTabs.filter(t => t.id !== activeTab.id && parseUrl(t.url));
-
-  const pathGroups = buildPathGroups(activeParsed, otherTabs);
-  const hostnameGroup = buildHostnameGroup(activeParsed, otherTabs);
-
-  return [...pathGroups, ...hostnameGroup];
-}
-
-function buildPathGroups(activeParsed, otherTabs) {
-  const sameHost = otherTabs.filter(t => parseUrl(t.url).hostname === activeParsed.hostname);
-  const groups = [];
-  let prevSize = sameHost.length + 1;
-
-  // Iterate from deepest to shallowest to surface most specific first
-  for (let depth = activeParsed.pathSegments.length - 1; depth >= 1; depth--) {
-    const prefix = activeParsed.pathSegments.slice(0, depth);
-    const matches = sameHost.filter(t => {
-      const p = parseUrl(t.url);
-      return prefix.every((seg, i) => p.pathSegments[i] === seg);
-    });
-
-    const size = matches.length + 1;
-    if (size < MIN_GROUP_SIZE) continue;
-    if (size >= prevSize) continue; // not more specific than what we already have
-
-    groups.push({
-      label: `/${prefix.join('/')}`,
-      strategy: 'path',
-      tabs: matches,
-    });
-    prevSize = size;
+  // Parse each tab's URL once
+  const parsedMap = new Map();
+  for (const t of allOtherTabs) {
+    const p = parseUrl(t.url);
+    if (p) parsedMap.set(t.id, p);
   }
 
-  return groups;
+  const parsableOtherTabs = allOtherTabs.filter(t => parsedMap.has(t.id));
+  const activeParsed = parseUrl(activeTab.url);
+  const urlGroups = activeParsed
+    ? buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap)
+    : [];
+
+  return [...urlGroups, ...buildRecencyGroups(allOtherTabs)];
 }
 
-function buildHostnameGroup(activeParsed, otherTabs) {
-  const matches = otherTabs.filter(t => parseUrl(t.url).hostname === activeParsed.hostname);
+
+function buildHostnameGroup(activeParsed, otherTabs, parsedMap) {
+  const matches = otherTabs.filter(t => parsedMap.get(t.id).hostname === activeParsed.hostname);
   if (matches.length + 1 < MIN_GROUP_SIZE) return [];
   return [{ label: activeParsed.hostname, strategy: 'hostname', tabs: matches }];
 }
 
+function buildRecencyGroups(otherTabs) {
+  const now = Date.now();
+
+  const weekOld = otherTabs.filter(t => t.lastAccessed && (now - t.lastAccessed) > ONE_WEEK_MS);
+  const threeDayOld = otherTabs.filter(t => t.lastAccessed && (now - t.lastAccessed) > THREE_DAYS_MS);
+
+  const groups = [];
+
+  // Broader group first (3 days), narrower below (1 week)
+  if (threeDayOld.length >= MIN_GROUP_SIZE && threeDayOld.length > weekOld.length) {
+    groups.push({ label: 'not used in 3+ days', strategy: 'recency', tabs: threeDayOld });
+  }
+
+  if (weekOld.length >= MIN_GROUP_SIZE) {
+    groups.push({ label: 'not used in 1+ week', strategy: 'recency', tabs: weekOld });
+  }
+
+  return groups;
+}

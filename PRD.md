@@ -30,44 +30,27 @@ https://mail.google.com/u/0/inbox
 
 ### 2. Grouping Strategies
 
-Applied to all open tabs relative to the active tab. Strategies run in order from most specific to broadest.
+Applied to all open tabs relative to the active tab.
 
-**A. Duplicate**
-Exact URL match after normalization (lowercase scheme+host, strip trailing slash).
-
-**B. Same hostname**
+**A. Same hostname**
 `tab.hostname === active.hostname`
 
-**C. Same registered domain**
-`tab.registeredDomain === active.registeredDomain`
-Captures related subdomains (e.g. `mail.google.com` + `docs.google.com`).
-
-**D. Shared path prefix (depth N)**
-Applies only when hostnames match. For each depth N from 1 to `pathSegments.length - 1`:
-- Candidate group = tabs where `pathSegments[0..N-1]` equals active tab's prefix at that depth
-- Surface only if group is smaller than depth N-1 (i.e. adds specificity)
-- Stop when group size drops to 1
-
-This produces a natural drill-down from broad path prefix to narrow.
-
-**E. Title token match**
+**B. Title token match**
 Tokenize tab titles. Identify tokens that look like identifiers:
 - `ALL-CAPS` words of 2+ chars
 - `WORD-NUMBER` patterns (e.g. `SLIDES-1734`, `PROJ-42`)
 
 For each such token in the active tab's title, surface a group of tabs whose title contains the same token.
 
-**F. Recency bucket**
+**C. Recency bucket**
 Tab-global groupings (not relative to active tab):
-- Last hour
-- Today
-- Yesterday or older
+- Not used in 3+ days
+- Not used in 1+ week
 
 ### 3. Filtering
 
 - Drop any candidate group with fewer than 2 tabs
-- Drop groups with identical membership to a more-specific group already in the list
-- Sort: Duplicate → path prefix deepest first → hostname → registered domain → title token → recency
+- Drop groups whose tab count duplicates a group already in the list (keep the first/most specific)
 
 ---
 
@@ -77,48 +60,66 @@ Tab-global groupings (not relative to active tab):
 
 Clicking the extension icon opens a **popup** showing the current tab and its candidate groups.
 
-### Popup Layout
+### Group List
+
+When multiple groups exist, shows a list to pick from:
 
 ```
 ┌─────────────────────────────────────┐
 │ Tab Master                          │
 │ Active: [tab title, truncated]      │
 ├─────────────────────────────────────┤
-│ Close similar tabs:                 │
-│                                     │
-│ ● Duplicate                 1 tab > │
-│ ● Path: /miro-ce/slides/pull 2 tabs>│
-│ ● Path: /miro-ce/slides     3 tabs >│
-│ ● Hostname: github.com      5 tabs >│
-│ ● Site: atlassian.net       2 tabs >│
-│ ● Title: "SLIDES-1734"      2 tabs >│
-│ ● Older than today          8 tabs >│
+│ HOST  github.com              5 tabs│
+│ AGE   not used in 3+ days    31 tabs│
+├─────────────────────────────────────┤
+│ [Close this tab]                    │
 └─────────────────────────────────────┘
 ```
 
-Clicking a row expands a checklist of matching tab titles (all pre-checked). A "Close N tabs" button confirms. The active tab is never included in any group.
+If only one group exists, the group list is skipped and the checklist opens directly.
+
+### Group Detail (Checklist)
+
+Clicking a group row opens a checklist of matching tabs with one-click actions:
+
+```
+┌─────────────────────────────────────┐
+│ ← github.com                        │
+├─────────────────────────────────────┤
+│ ☑ Tab title A                       │
+│ ☑ Tab title B              [current]│
+│ ☑ Tab title C                       │
+├─────────────────────────────────────┤
+│ [Close all 3 tabs]                  │
+│ [Keep current tab]                  │
+│ [Close checked tabs]                │
+└─────────────────────────────────────┘
+```
+
+- **Close all N tabs** — closes every tab in the group immediately
+- **Keep current tab** — closes all tabs in the group except the current one immediately
+- **Close checked tabs** — closes only the checked tabs (for fine-grained control)
+- The active tab is shown in the list with a "current" badge and starts unchecked
 
 ---
 
-## Prototype Scope (v0.1)
+## Implemented (v0.1)
 
-Build only what is needed to validate the core interaction.
-
-**In scope:**
-- Strategies B, C, D (hostname, registered domain, path prefix)
-- Popup UI
-- Checklist preview before close
-- `tldts` for eTLD+1 parsing
+- Strategy A (hostname grouping)
+- Strategy C (recency grouping: 3+ days, 1+ week)
+- Group list → checklist flow
+- One-click "Close all" and "Keep current" actions
+- Deduplication: groups with identical tab counts are collapsed
 - Manifest V3
 
-**Out of scope for v0.1:**
-- Strategy A (duplicate detection)
-- Strategy E (title token matching)
-- Strategy F (recency)
+## Out of Scope
+
+- Strategy B (title token matching)
+- Same registered domain grouping (cross-subdomain)
+- Duplicate URL detection
 - Context menu entry point
 - Session saving / undo
 - Keyboard navigation
-- Tab age indicators
 
 ---
 
@@ -131,7 +132,7 @@ Build only what is needed to validate the core interaction.
 
 ---
 
-## File Structure (proposed)
+## File Structure
 
 ```
 tab-master/
@@ -143,13 +144,6 @@ tab-master/
   src/
     parse.js       ← URL decomposition
     group.js       ← grouping strategies
-    rank.js        ← filter + sort candidates
-  vendor/
-    tldts.js       ← bundled or copied
-  icons/
-    icon16.png
-    icon48.png
-    icon128.png
   PRD.md
 ```
 
@@ -159,4 +153,6 @@ tab-master/
 
 - **Empty groups:** Never shown. Only groups with matches appear in the popup.
 - **Minimum group size:** 2 tabs (including the active tab). 1 other matching tab is enough to surface a group.
-- **Active tab inclusion:** The checklist includes the active tab, but it starts **unchecked** (keep by default). All other matched tabs start checked. A single "Close checked tabs" button closes whatever is checked. Checking the active tab and clicking close will close it too.
+- **Path grouping excluded:** Path-prefix groups are too fine-grained and add noise. Hostname grouping is the right granularity for URL-based groups.
+- **Count deduplication:** If two groups would show the same number of tabs, only the first (more specific) one is shown — the extra group adds no new choice.
+- **One-click actions:** "Close all" and "Keep current" let users act immediately without adjusting checkboxes. The checklist remains for edge cases.

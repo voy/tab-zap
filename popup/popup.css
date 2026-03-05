@@ -5,7 +5,7 @@
 }
 
 body {
-  width: 340px;
+  width: 400px;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
   color: #1a1a1a;
@@ -63,6 +63,7 @@ body {
   padding: 10px 14px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
+  user-select: none;
 }
 
 .group-item:hover {
@@ -100,7 +101,7 @@ body {
 
 .checklist {
   list-style: none;
-  max-height: 280px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -120,23 +121,12 @@ body {
   background: #f7f7f7;
 }
 
-.check-item.non-interactive {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-}
-
-.check-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ccc;
+.favicon,
+.favicon-placeholder {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-}
-
-.check-dot.is-current {
-  background: #888;
+  object-fit: contain;
 }
 
 .check-item input[type="checkbox"] {
@@ -167,6 +157,11 @@ body {
 
 /* ── Actions ── */
 
+.actions-top {
+  border-bottom: 1px solid #e8e8e8;
+  border-top: none;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
@@ -193,6 +188,11 @@ body {
 
 .btn-primary:hover {
   background: #333;
+}
+
+.btn-primary:disabled {
+  background: #ccc;
+  cursor: default;
 }
 
 .btn-secondary {
