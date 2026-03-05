@@ -67,6 +67,13 @@ body {
   color: #555;
 }
 
+.back-arrow {
+  font-size: 15px;
+  line-height: 1;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
 /* ── Group list ── */
 
 .group-list {
