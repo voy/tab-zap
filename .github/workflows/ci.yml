@@ -25,9 +25,11 @@ jobs:
 
       - run: echo "SHORT_SHA=${GITHUB_SHA::6}" >> $GITHUB_ENV
 
+      - run: echo "VERSION=$(jq -r .version manifest.json)" >> $GITHUB_ENV
+
       - uses: actions/upload-artifact@v4
         with:
-          name: tab-zap-${{ env.SHORT_SHA }}
+          name: tab-zap-${{ env.VERSION }}-${{ env.SHORT_SHA }}
           path: |
             manifest.json
             icons/icon16.png
