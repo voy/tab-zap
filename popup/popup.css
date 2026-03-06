@@ -54,6 +54,8 @@ body {
 }
 
 .back-btn {
+  display: inline-flex;
+  align-items: center;
   background: none;
   border: none;
   padding: 0;
@@ -68,10 +70,15 @@ body {
 }
 
 .back-arrow {
-  font-size: 15px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
   vertical-align: middle;
   margin-right: 3px;
+}
+
+.back-arrow svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* ── Group list ── */
