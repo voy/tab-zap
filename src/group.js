@@ -33,21 +33,19 @@ export function generateGroups(activeTab, allTabs) {
 
   const parsableOtherTabs = allOtherTabs.filter(t => parsedMap.has(t.id));
   const activeParsed = parseUrl(activeTab.url);
-  const urlGroups = activeParsed ? [
-    ...buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap),
-    ...buildPeerHostnameGroups(activeParsed, parsableOtherTabs, parsedMap),
-    ...buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap),
-  ] : [];
+  const hostnameGroups = activeParsed ? buildHostnameGroup(activeParsed, parsableOtherTabs, parsedMap) : [];
+  const peerGroups = activeParsed ? buildPeerHostnameGroups(activeParsed, parsableOtherTabs, parsedMap) : [];
+  const domainGroups = activeParsed ? buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap) : [];
+  const urlGroups = [...hostnameGroups, ...peerGroups, ...domainGroups];
 
   const newTabGroups = activeTab.url === 'chrome://newtab/' ? buildNewTabGroup(activeTab, allOtherTabs) : [];
-  const recencyGroups = urlGroups.length > 0 ? buildRecencyGroups(allOtherTabs) : [];
+  const recencyGroups = urlGroups.some(g => g.tabs.length > 0) ? buildRecencyGroups(allOtherTabs) : [];
   return [...urlGroups, ...newTabGroups, ...recencyGroups];
 }
 
 
 function buildHostnameGroup(activeParsed, otherTabs, parsedMap) {
   const matches = otherTabs.filter(t => parsedMap.get(t.id).hostname === activeParsed.hostname);
-  if (matches.length + 1 < MIN_GROUP_SIZE) return [];
   return [{ label: activeParsed.hostname, strategy: 'hostname', tabs: matches }];
 }
 

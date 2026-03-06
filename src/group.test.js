@@ -25,11 +25,13 @@ test('groups tabs by hostname', () => {
   assert.equal(hostGroup.tabs.length, 2); // tabs 2 and 3
 });
 
-test('no hostname group when fewer than 2 tabs match', () => {
+test('hostname group always exists for parsable URLs, with 0 other tabs when none match', () => {
   const active = tab(1, 'https://github.com/');
   const others = [tab(2, 'https://example.com/')];
   const groups = generateGroups(active, [active, ...others]);
-  assert.equal(groups.filter(g => g.strategy === 'hostname').length, 0);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup, 'hostname group should always exist for HTTP tabs');
+  assert.equal(hostGroup.tabs.length, 0);
 });
 
 test('excludes active tab from group tab list', () => {
@@ -199,11 +201,13 @@ test('includes active tab in newtab group when active is also a new tab', () => 
   assert.equal(ntGroup.tabs.length, 2);
 });
 
-test('returns empty array when no groups match', () => {
+test('always returns at least a hostname group for parsable HTTP tabs', () => {
   const active = tab(1, 'https://unique.com/');
   const others = [tab(2, 'https://other.com/')];
   const groups = generateGroups(active, [active, ...others]);
-  assert.deepEqual(groups, []);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].strategy, 'hostname');
+  assert.equal(groups[0].tabs.length, 0);
 });
 
 // ── dedupeByCount ─────────────────────────────────────────────────────────────
@@ -220,13 +224,12 @@ test('peer groups with equal tab counts are never deduplicated', () => {
   assert.equal(peerGroups.length, 2, 'both peer groups should survive deduplication');
 });
 
-test('dedupeByCount removes hostname group when tab count matches domain group', () => {
-  // all domain tabs are on the same hostname → hostname and domain have equal counts
+test('dedupeByCount does not choke on hostname group with 0 other tabs alongside domain group', () => {
+  // hostname group has 0 other tabs (count=1), domain group has 1 cross-subdomain tab (count=2)
   const active = tab(1, 'https://mail.google.com/');
   const other = tab(2, 'https://docs.google.com/');
   const groups = generateGroups(active, [active, other]);
-  // domain group: [other] → count = 1+1 = 2; hostname group: [] (no match) → not generated
-  // just verify deduplication doesn't choke on this shape
+  // hostname group: [] → count = 0+1 = 1; domain group: [other] → count = 1+1 = 2
   const deduped = dedupeByCount(groups);
   assert.ok(deduped.length <= groups.length);
 });

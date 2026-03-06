@@ -2,7 +2,7 @@ import { generateGroups, dedupeByCount } from '../src/group.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
-  peer:     { text: 'host', tip: 'All tabs on this hostname' },
+  peer:     { text: 'peer', tip: 'All tabs on this hostname' },
   domain:   { text: 'site', tip: 'All tabs on the same site (across subdomains)' },
   recency:  { text: 'age',  tip: 'Tabs not accessed recently' },
   newtab:   { text: 'new',  tip: 'New tab pages that were never used' },
@@ -27,8 +27,6 @@ async function init() {
 
     if (groups.length === 0) {
       renderEmpty(app, activeTab);
-    } else if (groups.length === 1) {
-      renderChecklist(app, activeTab, groups[0], groups, 0, checkState);
     } else {
       renderGroupList(app, activeTab, groups, checkState);
     }
@@ -90,20 +88,12 @@ function renderGroupList(app, activeTab, groups, checkState) {
         </li>`;
       }).join('')}
     </ul>
-    <div class="actions">
-      <button class="btn btn-secondary" id="close-one-btn">Close this tab</button>
-    </div>
   `;
 
   app.querySelectorAll('.group-item').forEach(el => {
     const i = parseInt(el.dataset.index);
     el.addEventListener('click', () => renderChecklist(app, activeTab, groups[i], groups, i, checkState));
     el.addEventListener('keyup', e => { if (e.key === 'Enter') el.click(); });
-  });
-
-  app.querySelector('#close-one-btn').addEventListener('click', async () => {
-    try { await chrome.tabs.remove(activeTab.id); } catch {}
-    window.close();
   });
 
   app.querySelector('.group-item')?.focus();
