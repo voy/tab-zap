@@ -21,13 +21,19 @@ jobs:
 
       - run: sudo apt-get install -y librsvg2-bin
 
-      - run: npm run package
+      - run: npm run build
 
       - run: echo "SHORT_SHA=${GITHUB_SHA::6}" >> $GITHUB_ENV
-
-      - run: mv tab-zap.zip tab-zap-${{ env.SHORT_SHA }}.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: tab-zap-${{ env.SHORT_SHA }}
-          path: tab-zap-${{ env.SHORT_SHA }}.zip
+          path: |
+            manifest.json
+            icons/icon16.png
+            icons/icon48.png
+            icons/icon128.png
+            popup/popup.html
+            popup/popup.css
+            popup/popup.bundle.js
+            background/background.bundle.js
