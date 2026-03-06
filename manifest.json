@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Close groups of related tabs quickly",
   "background": {
-    "service_worker": "background.bundle.js"
+    "service_worker": "background/background.bundle.js"
   },
   "commands": {
     "_execute_action": {
