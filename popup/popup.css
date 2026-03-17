@@ -133,10 +133,15 @@ body {
   font-family: monospace;
   font-size: 12px;
   color: #1a1a1a;
-  min-width: 0;
+  flex: 1;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.label-wildcard {
+  color: #bbb;
 }
 
 .strategy-badge {
@@ -337,6 +342,10 @@ body {
 
   .group-label {
     color: #f0f0f0;
+  }
+
+  .label-wildcard {
+    color: #666;
   }
 
   .strategy-badge {

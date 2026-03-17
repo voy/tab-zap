@@ -68,7 +68,7 @@ test('groups tabs by registered domain across subdomains', () => {
   const groups = generateGroups(active, [active, ...others]);
   const domainGroup = groups.find(g => g.strategy === 'domain');
   assert.ok(domainGroup, 'domain group should exist');
-  assert.equal(domainGroup.label, 'google.com');
+  assert.equal(domainGroup.label, '*.google.com');
   // tabs 2 and 3 match by domain (tab 3 also matches hostname but is in domain group)
   assert.ok(domainGroup.tabs.some(t => t.id === 2));
 });
@@ -155,13 +155,22 @@ test('generates separate peer groups for distinct subdomains', () => {
   assert.ok(peerGroups.some(g => g.label === 'maps.google.com'));
 });
 
-test('domain group label is the registered domain', () => {
+test('domain group label uses *.domain to indicate cross-subdomain scope', () => {
   const active = tab(1, 'https://mail.google.com/');
   const docs = tab(2, 'https://docs.google.com/');
   const groups = generateGroups(active, [active, docs]);
   const domainGroup = groups.find(g => g.strategy === 'domain');
   assert.ok(domainGroup);
-  assert.equal(domainGroup.label, 'google.com');
+  assert.equal(domainGroup.label, '*.google.com');
+});
+
+test('domain group label uses *.domain when active tab is at root domain', () => {
+  const active = tab(1, 'https://github.com/foo');
+  const sub = tab(2, 'https://gist.github.com/bar');
+  const groups = generateGroups(active, [active, sub]);
+  const domainGroup = groups.find(g => g.strategy === 'domain');
+  assert.ok(domainGroup);
+  assert.equal(domainGroup.label, '*.github.com');
 });
 
 // ── new tab grouping ──────────────────────────────────────────────────────────

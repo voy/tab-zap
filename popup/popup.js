@@ -83,7 +83,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         ${isFirstRecency ? '<li class="group-divider"></li>' : ''}
         <li class="group-item" tabindex="0" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
-          <span class="group-label">${esc(g.label)}</span>
+          <span class="group-label">${renderLabel(g.label)}</span>
           <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1} tabs</span>
         </li>`;
       }).join('')}
@@ -228,6 +228,14 @@ function checkedIds(app) {
   return [...app.querySelectorAll('input[type=checkbox]:checked')]
     .map(el => parseInt(el.dataset.tabId))
     .filter(id => !isNaN(id));
+}
+
+
+function renderLabel(label) {
+  if (label.startsWith('*.')) {
+    return `<span class="label-wildcard">*.</span>${esc(label.slice(2))}`;
+  }
+  return esc(label);
 }
 
 function esc(str) {
