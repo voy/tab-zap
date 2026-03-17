@@ -190,6 +190,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
 
   setKeyHandler(e => {
     const navItems = [
+      hasMultipleGroups ? app.querySelector('.back-btn') : null,
       app.querySelector('#close-btn'),
       app.querySelector('#keep-current-btn') ?? app.querySelector('#close-one-btn'),
       ...app.querySelectorAll('input[type=checkbox]'),

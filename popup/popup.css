@@ -69,6 +69,12 @@ body {
   color: #555;
 }
 
+.back-btn:focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 .back-arrow {
   display: inline-flex;
   align-items: center;
@@ -257,6 +263,11 @@ body {
   background: #e4e4e4;
 }
 
+.btn:focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 3px;
+}
+
 /* ── Empty state ── */
 
 .empty {
@@ -298,6 +309,10 @@ body {
 
   .back-btn:hover {
     color: #aaa;
+  }
+
+  .back-btn:focus-visible {
+    outline-color: #aaa;
   }
 
   .group-item {
@@ -377,6 +392,10 @@ body {
 
   .btn-secondary:hover {
     background: #3a3a3c;
+  }
+
+  .btn:focus-visible {
+    outline-color: #aaa;
   }
 
   .empty {
