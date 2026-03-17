@@ -268,6 +268,12 @@ body {
   background: #e4e4e4;
 }
 
+.btn-secondary:disabled {
+  background: #e8e8e8;
+  color: #aaa;
+  cursor: default;
+}
+
 .btn:focus-visible {
   outline: 2px solid #555;
   outline-offset: 3px;
@@ -401,6 +407,12 @@ body {
 
   .btn-secondary:hover {
     background: #3a3a3c;
+  }
+
+  .btn-secondary:disabled {
+    background: #2c2c2e;
+    color: #555;
+    cursor: default;
   }
 
   .btn:focus-visible {

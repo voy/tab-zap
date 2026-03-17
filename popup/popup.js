@@ -93,7 +93,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
   app.querySelectorAll('.group-item').forEach(el => {
     const i = parseInt(el.dataset.index);
     el.addEventListener('click', () => renderChecklist(app, activeTab, groups[i], groups, i, checkState));
-    el.addEventListener('keyup', e => { if (e.key === 'Enter') el.click(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.click(); } });
   });
 
   app.querySelector('.group-item')?.focus();
@@ -110,23 +110,15 @@ function renderGroupList(app, activeTab, groups, checkState) {
 function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) {
   const allGroupTabs = (group.strategy === 'recency' || group.strategy === 'newtab' || group.strategy === 'peer') ? group.tabs : [activeTab, ...group.tabs];
   const savedIds = checkState.get(groupIndex);
-  const hasMultipleGroups = groups.length > 1;
 
   app.innerHTML = `
     <div class="header">
-      ${hasMultipleGroups
-        ? `<button class="back-btn"><span class="back-arrow"><svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path></svg></span> ${esc(group.label)}</button>`
-        : `<div class="header-row">
-             <div class="app-title">Tab Zap</div>
-             ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
-           </div>
-           <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>`
-      }
+      <button class="back-btn"><span class="back-arrow"><svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path></svg></span> ${esc(group.label)}</button>
     </div>
     <div class="actions actions-top">
       <button class="btn btn-primary" id="close-btn" disabled>Close checked tabs</button>
       ${allGroupTabs.some(t => t.id === activeTab.id)
-        ? `<button class="btn btn-secondary" id="keep-current-btn">Keep current tab</button>`
+        ? `<button class="btn btn-secondary" id="keep-current-btn"${allGroupTabs.length === 1 ? ' disabled' : ''}>Keep current tab</button>`
         : `<button class="btn btn-secondary" id="close-one-btn">Close this tab</button>`}
     </div>
     <ul class="checklist">
@@ -161,12 +153,10 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
   updateCloseButton();
   app.querySelector('.checklist').addEventListener('change', updateCloseButton);
 
-  if (hasMultipleGroups) {
-    app.querySelector('.back-btn').addEventListener('click', () => {
-      checkState.set(groupIndex, new Set(checkedIds(app)));
-      renderGroupList(app, activeTab, groups, checkState);
-    });
-  }
+  app.querySelector('.back-btn').addEventListener('click', () => {
+    checkState.set(groupIndex, new Set(checkedIds(app)));
+    renderGroupList(app, activeTab, groups, checkState);
+  });
 
   app.querySelector('#keep-current-btn')?.addEventListener('click', async () => {
     const toClose = allGroupTabs.filter(t => t.id !== activeTab.id).map(t => t.id);
@@ -190,9 +180,9 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
 
   setKeyHandler(e => {
     const navItems = [
-      hasMultipleGroups ? app.querySelector('.back-btn') : null,
+      app.querySelector('.back-btn'),
       app.querySelector('#close-btn'),
-      app.querySelector('#keep-current-btn') ?? app.querySelector('#close-one-btn'),
+      app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn'),
       ...app.querySelectorAll('input[type=checkbox]'),
     ].filter(Boolean);
     const cur = navItems.indexOf(document.activeElement);
@@ -207,12 +197,8 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
       document.activeElement.click();
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (hasMultipleGroups) {
-        checkState.set(groupIndex, new Set(checkedIds(app)));
-        renderGroupList(app, activeTab, groups, checkState);
-      } else {
-        window.close();
-      }
+      checkState.set(groupIndex, new Set(checkedIds(app)));
+      renderGroupList(app, activeTab, groups, checkState);
     }
   });
 }
