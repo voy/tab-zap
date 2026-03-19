@@ -103,7 +103,30 @@ function renderGroupList(app, activeTab, groups, checkState) {
     const cur = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
     else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
-    else if (e.key === 'Escape') window.close();
+    else if (e.key === 'Escape' || e.key === 'q') window.close();
+    else if ((e.key === 'd' || e.key === 'D') && cur !== -1) {
+      e.preventDefault();
+      const i = parseInt(items[cur].dataset.index);
+      if (e.key === 'D') {
+        if (groups[i].tabs.length === 0) return;
+        chrome.tabs.remove(groups[i].tabs.map(t => t.id)).catch(() => {});
+        const newGroups = groups.filter((_, idx) => idx !== i);
+        if (newGroups.length === 0) { window.close(); return; }
+        renderGroupList(app, activeTab, newGroups, checkState);
+        const newItems = [...app.querySelectorAll('.group-item')];
+        newItems[Math.min(cur, newItems.length - 1)]?.focus();
+      } else {
+        (async () => {
+          try { await chrome.tabs.remove([...groups[i].tabs.map(t => t.id), activeTab.id]); } catch {}
+          const [newActiveTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (!newActiveTab) { window.close(); return; }
+          const allTabs = await chrome.tabs.query({ currentWindow: true });
+          const newGroups = dedupeByCount(generateGroups(newActiveTab, allTabs));
+          if (newGroups.length === 0) { window.close(); return; }
+          renderGroupList(app, newActiveTab, newGroups, checkState);
+        })();
+      }
+    }
   });
 }
 
@@ -199,6 +222,8 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
       e.preventDefault();
       checkState.set(groupIndex, new Set(checkedIds(app)));
       renderGroupList(app, activeTab, groups, checkState);
+    } else if (e.key === 'q') {
+      window.close();
     }
   });
 }
