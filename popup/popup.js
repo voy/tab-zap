@@ -68,7 +68,7 @@ function renderEmpty(app, activeTab) {
 }
 
 function keyHints(items) {
-  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><kbd>${esc(k)}</kbd>${esc(label)}</span>`).join('')}</div>`;
+  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span>${esc(label)}</span>`).join('<span class="key-hint-sep">·</span>')}</div>`;
 }
 
 function attachHintsToggle(app) {
@@ -82,10 +82,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
     <div class="header">
       <div class="header-row">
         <div class="app-title">Current Tab</div>
-        <div class="header-right">
-          ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
-          <button class="hints-btn" title="Keyboard shortcuts">?</button>
-        </div>
+        <button class="hints-btn" title="Keyboard shortcuts">?</button>
       </div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
@@ -97,11 +94,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
         <li class="group-item" tabindex="0" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${renderLabel(g.label)}</span>
-          <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1} tabs</span>
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k','navigate'],['↵','open'],['d','close+me'],['D','close group'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['↵','open'],['d','close+me'],['D','close group'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
