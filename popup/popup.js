@@ -94,6 +94,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         <li class="group-item" tabindex="0" data-index="${i}">
           <span class="strategy-badge" title="${esc((STRATEGY_LABELS[g.strategy]?.tip) ?? '')}">${esc((STRATEGY_LABELS[g.strategy]?.text) ?? g.strategy)}</span>
           <span class="group-label">${renderLabel(g.label)}</span>
+          <span class="group-count">${(g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1} tabs</span>
         </li>`;
       }).join('')}
     </ul>
