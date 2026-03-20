@@ -97,7 +97,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['↵','open'],['d','close+me'],['D','close group'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['↵','open'],['d','close all'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
