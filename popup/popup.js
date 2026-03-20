@@ -9,6 +9,7 @@ const STRATEGY_LABELS = {
 };
 
 let shortcutHint = '';
+let hintsVisible = false;
 
 async function init() {
   const app = document.getElementById('app');
@@ -71,10 +72,18 @@ function keyHints(items) {
   return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span>${esc(label)}</span>`).join('<span class="key-hint-sep">·</span>')}</div>`;
 }
 
+function applyHintsVisibility(app) {
+  app.querySelector('.key-hints')?.classList.toggle('visible', hintsVisible);
+}
+
+function toggleHints(app) {
+  hintsVisible = !hintsVisible;
+  applyHintsVisibility(app);
+}
+
 function attachHintsToggle(app) {
-  app.querySelector('.hints-btn')?.addEventListener('click', () => {
-    app.querySelector('.key-hints')?.classList.toggle('visible');
-  });
+  applyHintsVisibility(app);
+  app.querySelector('.hints-btn')?.addEventListener('click', () => toggleHints(app));
 }
 
 function renderGroupList(app, activeTab, groups, checkState) {
@@ -98,7 +107,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['↵','open'],['d','close all'],['D','keep current'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['l/↵','open'],['d','close all'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -115,6 +124,8 @@ function renderGroupList(app, activeTab, groups, checkState) {
     const cur = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
     else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
+    else if ((e.key === 'l' || e.key === 'ArrowRight') && cur !== -1) { e.preventDefault(); items[cur].click(); }
+    else if (e.key === '?') { e.preventDefault(); toggleHints(app); }
     else if (e.key === 'Escape' || e.key === 'q') window.close();
     else if ((e.key === 'd' || e.key === 'D') && cur !== -1) {
       e.preventDefault();
@@ -174,7 +185,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k','navigate'],['x','toggle'],['Esc','back'],['q','quit']])}
+    ${keyHints([['j/k','navigate'],['h','back'],['x','toggle'],['d','close checked'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -236,10 +247,25 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
       navItems[(cur - 1 + navItems.length) % navItems.length]?.focus();
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       checkState.set(groupIndex, new Set(checkedIds(app)));
       renderGroupList(app, activeTab, groups, checkState);
+    } else if (e.key === 'd') {
+      e.preventDefault();
+      app.querySelector('#close-btn:not(:disabled)')?.click();
+    } else if (e.key === 'D') {
+      e.preventDefault();
+      const keepBtn = app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn');
+      if (keepBtn) {
+        keepBtn.click();
+      } else {
+        checkState.set(groupIndex, new Set(checkedIds(app)));
+        renderGroupList(app, activeTab, groups, checkState);
+      }
+    } else if (e.key === '?') {
+      e.preventDefault();
+      toggleHints(app);
     } else if (e.key === 'q') {
       window.close();
     }
