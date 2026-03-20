@@ -279,6 +279,68 @@ body {
   outline-offset: 3px;
 }
 
+/* ── Key hints ── */
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hints-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #bbb;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hints-btn:hover {
+  color: #888;
+  border-color: #bbb;
+}
+
+.key-hints {
+  display: none;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  padding: 6px 14px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.key-hints.visible {
+  display: flex;
+}
+
+.key-hint-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #ccc;
+}
+
+.key-hints kbd {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 10px;
+  color: #bbb;
+  background: #f4f4f4;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 1.6;
+}
+
 /* ── Empty state ── */
 
 .empty {
@@ -421,5 +483,29 @@ body {
 
   .empty {
     color: #666;
+  }
+
+  .hints-btn {
+    color: #555;
+    border-color: #3a3a3c;
+  }
+
+  .hints-btn:hover {
+    color: #888;
+    border-color: #666;
+  }
+
+  .key-hints {
+    border-top-color: #2c2c2e;
+  }
+
+  .key-hint-item {
+    color: #555;
+  }
+
+  .key-hints kbd {
+    color: #555;
+    background: #2c2c2e;
+    border-color: #3a3a3c;
   }
 }

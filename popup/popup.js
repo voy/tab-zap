@@ -67,12 +67,25 @@ function renderEmpty(app, activeTab) {
   });
 }
 
+function keyHints(items) {
+  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><kbd>${esc(k)}</kbd>${esc(label)}</span>`).join('')}</div>`;
+}
+
+function attachHintsToggle(app) {
+  app.querySelector('.hints-btn')?.addEventListener('click', () => {
+    app.querySelector('.key-hints')?.classList.toggle('visible');
+  });
+}
+
 function renderGroupList(app, activeTab, groups, checkState) {
   app.innerHTML = `
     <div class="header">
       <div class="header-row">
         <div class="app-title">Current Tab</div>
-        ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+        <div class="header-right">
+          ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+          <button class="hints-btn" title="Keyboard shortcuts">?</button>
+        </div>
       </div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
@@ -88,8 +101,10 @@ function renderGroupList(app, activeTab, groups, checkState) {
         </li>`;
       }).join('')}
     </ul>
+    ${keyHints([['j/k','navigate'],['↵','open'],['d','close+me'],['D','close group'],['q','quit']])}
   `;
 
+  attachHintsToggle(app);
   app.querySelectorAll('.group-item').forEach(el => {
     const i = parseInt(el.dataset.index);
     el.addEventListener('click', () => renderChecklist(app, activeTab, groups[i], groups, i, checkState));
@@ -136,7 +151,10 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
 
   app.innerHTML = `
     <div class="header">
-      <button class="back-btn"><span class="back-arrow"><svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path></svg></span> ${esc(group.label)}</button>
+      <div class="header-row">
+        <button class="back-btn"><span class="back-arrow"><svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path></svg></span> ${esc(group.label)}</button>
+        <button class="hints-btn" title="Keyboard shortcuts">?</button>
+      </div>
     </div>
     <div class="actions actions-top">
       <button class="btn btn-primary" id="close-btn" disabled>Close checked tabs</button>
@@ -159,7 +177,10 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
         </li>`;
       }).join('')}
     </ul>
+    ${keyHints([['j/k','navigate'],['x','toggle'],['Esc','back'],['q','quit']])}
   `;
+
+  attachHintsToggle(app);
 
   // Attach favicon error handlers (onerror attribute is blocked by MV3 CSP)
   app.querySelectorAll('img.favicon').forEach(img => {
