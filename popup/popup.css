@@ -44,37 +44,33 @@ body {
 }
 
 .back-btn {
-  display: inline-flex;
-  align-items: center;
   background: none;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a1a;
+  border: 1px solid #bbb;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  color: #888;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.back-btn svg {
+  width: 8px;
+  height: 8px;
 }
 
 .back-btn:hover {
-  color: #555;
+  color: #888;
+  border-color: #bbb;
 }
 
 .back-btn:focus-visible {
   outline: 2px solid #555;
   outline-offset: 2px;
-  border-radius: 3px;
-}
-
-.back-arrow {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-  margin-right: 3px;
-}
-
-.back-arrow svg {
-  width: 13px;
-  height: 13px;
 }
 
 /* ── Group list ── */
@@ -294,6 +290,11 @@ body {
   border-color: #bbb;
 }
 
+.hints-btn:focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 2px;
+}
+
 .key-hints {
   display: none;
   flex-wrap: wrap;
@@ -363,11 +364,13 @@ body {
   }
 
   .back-btn {
-    color: #f0f0f0;
+    border-color: #444;
+    color: #666;
   }
 
   .back-btn:hover {
     color: #aaa;
+    border-color: #666;
   }
 
   .back-btn:focus-visible {
