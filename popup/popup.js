@@ -1,4 +1,4 @@
-import { generateGroups, dedupeByCount } from '../src/group.js';
+import { generateGroups } from '../src/group.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
@@ -22,8 +22,7 @@ async function init() {
     shortcutHint = cmd?.shortcut ? formatShortcut(cmd.shortcut) : '';
 
     const allTabs = await chrome.tabs.query({ currentWindow: true });
-    const rawGroups = generateGroups(activeTab, allTabs);
-    const groups = dedupeByCount(rawGroups);
+    const groups = generateGroups(activeTab, allTabs);
     const checkState = new Map();
 
     if (groups.length === 0) {
@@ -144,7 +143,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
           const [newActiveTab] = await chrome.tabs.query({ active: true, currentWindow: true });
           if (!newActiveTab) { window.close(); return; }
           const allTabs = await chrome.tabs.query({ currentWindow: true });
-          const newGroups = dedupeByCount(generateGroups(newActiveTab, allTabs));
+          const newGroups = generateGroups(newActiveTab, allTabs);
           if (newGroups.length === 0) { window.close(); return; }
           renderGroupList(app, newActiveTab, newGroups, checkState);
         })();

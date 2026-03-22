@@ -7,18 +7,6 @@ const MIN_GROUP_SIZE = 2;
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
-export function dedupeByCount(groups) {
-  const tabCount = g => g.strategy === 'peer' ? g.tabs.length : g.tabs.length + 1;
-  const seen = new Set();
-  return groups.filter(g => {
-    if (g.strategy === 'peer') return true;
-    const n = tabCount(g);
-    if (seen.has(n)) return false;
-    seen.add(n);
-    return true;
-  });
-}
-
 export function generateGroups(activeTab, allTabs) {
   const allOtherTabs = allTabs.filter(t => t.id !== activeTab.id && !t.pinned);
 

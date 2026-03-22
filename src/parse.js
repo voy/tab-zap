@@ -14,7 +14,7 @@ export function parseUrl(urlString) {
     const hostname = url.port ? `${host}:${url.port}` : host;
 
     const tld = parseTld(host);
-    const registeredDomain = tld.domain || hostname;
+    const registeredDomain = (tld.domain || host) + (url.port ? `:${url.port}` : '');
 
     return {
       hostname,

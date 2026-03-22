@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateGroups, dedupeByCount } from './group.js';
+import { generateGroups } from './group.js';
 
 const NOW = Date.now();
 
@@ -165,45 +165,22 @@ test('always returns at least a hostname group for parsable HTTP tabs', () => {
   assert.equal(groups[0].tabs.length, 0);
 });
 
-// ── dedupeByCount ─────────────────────────────────────────────────────────────
+// ── port handling in domain grouping ─────────────────────────────────────────
 
-test('peer groups with equal tab counts are never deduplicated', () => {
-  const active = tab(1, 'https://google.com/');
-  const cal1 = tab(2, 'https://calendar.google.com/');
-  const cal2 = tab(3, 'https://calendar.google.com/');
-  const maps1 = tab(4, 'https://maps.google.com/');
-  const maps2 = tab(5, 'https://maps.google.com/');
-  const groups = generateGroups(active, [active, cal1, cal2, maps1, maps2]);
-  const deduped = dedupeByCount(groups);
-  const peerGroups = deduped.filter(g => g.strategy === 'peer');
-  assert.equal(peerGroups.length, 2, 'both peer groups should survive deduplication');
-});
-
-test('dedupeByCount does not choke on hostname group with 0 other tabs alongside domain group', () => {
-  // hostname group has 0 other tabs (count=1), domain group has 1 cross-subdomain tab (count=2)
-  const active = tab(1, 'https://mail.google.com/');
-  const other = tab(2, 'https://docs.google.com/');
+test('tabs on same port across subdomains form a domain group with port in label', () => {
+  const active = tab(1, 'http://mail.example.com:8443/');
+  const other = tab(2, 'http://docs.example.com:8443/');
   const groups = generateGroups(active, [active, other]);
-  // hostname group: [] → count = 0+1 = 1; domain group: [other] → count = 1+1 = 2
-  const deduped = dedupeByCount(groups);
-  assert.ok(deduped.length <= groups.length);
+  const domainGroup = groups.find(g => g.strategy === 'domain');
+  assert.ok(domainGroup);
+  assert.equal(domainGroup.label, '*.example.com:8443');
 });
 
-test('dedupeByCount keeps all groups when counts are distinct', () => {
-  // hostname(2) → count 3, domain(4) → count 5 — all distinct
-  const g = (strategy, count) => ({ strategy, tabs: Array(count).fill({}) });
-  const groups = [g('hostname', 2), g('domain', 4)];
-  const deduped = dedupeByCount(groups);
-  assert.equal(deduped.length, 2);
-});
-
-test('dedupeByCount removes a group when it has the same tab count as an earlier group', () => {
-  // hostname(1 tab) → count=2, domain(1 tab) → count=2: domain should be removed
-  const g = (strategy, count) => ({ strategy, tabs: Array(count).fill({}) });
-  const groups = [g('hostname', 1), g('domain', 1)];
-  const deduped = dedupeByCount(groups);
-  assert.equal(deduped.length, 1);
-  assert.equal(deduped[0].strategy, 'hostname');
+test('tabs on different ports do not form a cross-port domain group', () => {
+  const active = tab(1, 'http://example.com:8443/');
+  const other = tab(2, 'http://sub.example.com/');
+  const groups = generateGroups(active, [active, other]);
+  assert.equal(groups.filter(g => g.strategy === 'domain').length, 0);
 });
 
 
