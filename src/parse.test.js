@@ -31,9 +31,10 @@ test('returns null for invalid URL', () => {
   assert.equal(parseUrl('not a url'), null);
 });
 
-test('returns null for chrome://newtab', () => {
-  assert.equal(parseUrl('chrome://newtab'), null);
-  assert.equal(parseUrl('chrome://newtab/'), null);
+test('parses chrome://newtab', () => {
+  const r = parseUrl('chrome://newtab/');
+  assert.equal(r.hostname, 'newtab');
+  assert.equal(r.registeredDomain, 'newtab');
 });
 
 test('parses chrome://extensions', () => {

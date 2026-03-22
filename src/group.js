@@ -1,8 +1,6 @@
 import { parseUrl } from './parse.js';
 
 const MIN_GROUP_SIZE = 2;
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * @param {chrome.tabs.Tab} activeTab
@@ -10,7 +8,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
 export function dedupeByCount(groups) {
-  const tabCount = g => (g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer') ? g.tabs.length : g.tabs.length + 1;
+  const tabCount = g => g.strategy === 'peer' ? g.tabs.length : g.tabs.length + 1;
   const seen = new Set();
   return groups.filter(g => {
     if (g.strategy === 'peer') return true;
@@ -38,9 +36,7 @@ export function generateGroups(activeTab, allTabs) {
   const domainGroups = activeParsed ? buildRegisteredDomainGroup(activeParsed, parsableOtherTabs, parsedMap) : [];
   const urlGroups = [...hostnameGroups, ...peerGroups, ...domainGroups];
 
-  const newTabGroups = activeTab.url === 'chrome://newtab/' ? buildNewTabGroup(activeTab, allOtherTabs) : [];
-  const recencyGroups = urlGroups.some(g => g.tabs.length > 0) ? buildRecencyGroups(allOtherTabs) : [];
-  return [...urlGroups, ...newTabGroups, ...recencyGroups];
+  return urlGroups;
 }
 
 
@@ -72,29 +68,3 @@ function buildRegisteredDomainGroup(activeParsed, otherTabs, parsedMap) {
   return [{ label: `*.${activeParsed.registeredDomain}`, strategy: 'domain', tabs: matches }];
 }
 
-function buildNewTabGroup(activeTab, otherTabs) {
-  const otherNewTabs = otherTabs.filter(t => t.url === 'chrome://newtab/');
-  const allNewTabs = [activeTab, ...otherNewTabs];
-  if (allNewTabs.length < MIN_GROUP_SIZE) return [];
-  return [{ label: 'unused new tabs', strategy: 'newtab', tabs: allNewTabs }];
-}
-
-function buildRecencyGroups(otherTabs) {
-  const now = Date.now();
-
-  const weekOld = otherTabs.filter(t => t.lastAccessed && (now - t.lastAccessed) > ONE_WEEK_MS);
-  const threeDayOld = otherTabs.filter(t => t.lastAccessed && (now - t.lastAccessed) > THREE_DAYS_MS);
-
-  const groups = [];
-
-  // Broader group first (3 days), narrower below (1 week)
-  if (threeDayOld.length >= MIN_GROUP_SIZE && threeDayOld.length > weekOld.length) {
-    groups.push({ label: 'not used in 3+ days', strategy: 'recency', tabs: threeDayOld });
-  }
-
-  if (weekOld.length >= MIN_GROUP_SIZE) {
-    groups.push({ label: 'not used in 1+ week', strategy: 'recency', tabs: weekOld });
-  }
-
-  return groups;
-}

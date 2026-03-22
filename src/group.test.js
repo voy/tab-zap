@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { generateGroups, dedupeByCount } from './group.js';
 
 const NOW = Date.now();
-const DAY = 24 * 60 * 60 * 1000;
 
 function tab(id, url, { pinned = false, lastAccessed = NOW } = {}) {
   return { id, url, title: `Tab ${id}`, pinned, lastAccessed };
@@ -91,35 +90,6 @@ test('domain group appears when exactly 1 cross-subdomain tab exists', () => {
   assert.ok(domainGroup, 'should form a domain group with 1 cross-subdomain tab');
 });
 
-// ── recency grouping ──────────────────────────────────────────────────────────
-
-test('groups stale tabs by recency', () => {
-  const active = tab(1, 'https://github.com/');
-  const sameHost = tab(5, 'https://github.com/foo'); // ensures a url group exists
-  const stale3d = tab(2, 'https://example.com/', { lastAccessed: NOW - 4 * DAY });
-  const stale7d = tab(3, 'https://other.com/', { lastAccessed: NOW - 8 * DAY });
-  const fresh = tab(4, 'https://fresh.com/');
-  const others = [sameHost, stale3d, stale7d, fresh];
-  const groups = generateGroups(active, [active, ...others]);
-  const recencyGroups = groups.filter(g => g.strategy === 'recency');
-  assert.ok(recencyGroups.length > 0);
-  const threeDayGroup = recencyGroups.find(g => g.label.includes('3+'));
-  assert.ok(threeDayGroup);
-  assert.ok(threeDayGroup.tabs.some(t => t.id === stale3d.id));
-  assert.ok(threeDayGroup.tabs.some(t => t.id === stale7d.id));
-  assert.ok(!threeDayGroup.tabs.some(t => t.id === fresh.id));
-});
-
-test('no recency groups when no hostname/domain groups exist', () => {
-  // recency groups are only shown when there are also URL-based groups
-  const active = tab(1, 'https://unique-site.com/');
-  const stale = [
-    tab(2, 'https://a.com/', { lastAccessed: NOW - 5 * DAY }),
-    tab(3, 'https://b.com/', { lastAccessed: NOW - 5 * DAY }),
-  ];
-  const groups = generateGroups(active, [active, ...stale]);
-  assert.equal(groups.filter(g => g.strategy === 'recency').length, 0);
-});
 
 // ── peer hostname grouping ────────────────────────────────────────────────────
 
@@ -173,41 +143,17 @@ test('domain group label uses *.domain when active tab is at root domain', () =>
   assert.equal(domainGroup.label, '*.github.com');
 });
 
-// ── new tab grouping ──────────────────────────────────────────────────────────
+// ── new tab ───────────────────────────────────────────────────────────────────
 
-test('no newtab group when active tab is not a new tab', () => {
-  const active = tab(1, 'https://github.com/');
-  const nt1 = tab(2, 'chrome://newtab/');
-  const nt2 = tab(3, 'chrome://newtab/');
-  const groups = generateGroups(active, [active, nt1, nt2]);
-  assert.equal(groups.filter(g => g.strategy === 'newtab').length, 0);
-});
-
-test('groups unused new tabs when active tab is also a new tab', () => {
+test('chrome://newtab tabs group together by hostname', () => {
   const active = tab(1, 'chrome://newtab/');
   const nt1 = tab(2, 'chrome://newtab/');
   const nt2 = tab(3, 'chrome://newtab/');
   const groups = generateGroups(active, [active, nt1, nt2]);
-  const ntGroup = groups.find(g => g.strategy === 'newtab');
-  assert.ok(ntGroup, 'newtab group should exist');
-  assert.equal(ntGroup.tabs.length, 3);
-});
-
-test('no newtab group when fewer than 2 new tabs', () => {
-  const active = tab(1, 'https://github.com/');
-  const nt = tab(2, 'chrome://newtab/');
-  const groups = generateGroups(active, [active, nt]);
-  assert.equal(groups.filter(g => g.strategy === 'newtab').length, 0);
-});
-
-test('includes active tab in newtab group when active is also a new tab', () => {
-  const active = tab(1, 'chrome://newtab/');
-  const nt = tab(2, 'chrome://newtab/');
-  const groups = generateGroups(active, [active, nt]);
-  const ntGroup = groups.find(g => g.strategy === 'newtab');
-  assert.ok(ntGroup, 'newtab group should exist');
-  assert.ok(ntGroup.tabs.some(t => t.id === active.id));
-  assert.equal(ntGroup.tabs.length, 2);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup);
+  assert.equal(hostGroup.label, 'newtab');
+  assert.equal(hostGroup.tabs.length, 2);
 });
 
 test('always returns at least a hostname group for parsable HTTP tabs', () => {
@@ -244,12 +190,11 @@ test('dedupeByCount does not choke on hostname group with 0 other tabs alongside
 });
 
 test('dedupeByCount keeps all groups when counts are distinct', () => {
-  // tabCount: hostname/domain use tabs.length+1, recency uses tabs.length
-  // hostname(2) → 3, recency(5) → 5, domain(7) → 8 — all distinct
+  // hostname(2) → count 3, domain(4) → count 5 — all distinct
   const g = (strategy, count) => ({ strategy, tabs: Array(count).fill({}) });
-  const groups = [g('hostname', 2), g('recency', 5), g('domain', 7)];
+  const groups = [g('hostname', 2), g('domain', 4)];
   const deduped = dedupeByCount(groups);
-  assert.equal(deduped.length, 3);
+  assert.equal(deduped.length, 2);
 });
 
 test('dedupeByCount removes a group when it has the same tab count as an earlier group', () => {
@@ -261,44 +206,6 @@ test('dedupeByCount removes a group when it has the same tab count as an earlier
   assert.equal(deduped[0].strategy, 'hostname');
 });
 
-// ── recency edge cases ────────────────────────────────────────────────────────
-
-test('shows only 1-week group when no tabs are in 3-7 day window', () => {
-  const active = tab(1, 'https://github.com/');
-  const sameHost = tab(2, 'https://github.com/foo');
-  const week1 = tab(3, 'https://a.com/', { lastAccessed: NOW - 8 * DAY });
-  const week2 = tab(4, 'https://b.com/', { lastAccessed: NOW - 9 * DAY });
-  const groups = generateGroups(active, [active, sameHost, week1, week2]);
-  const recencyGroups = groups.filter(g => g.strategy === 'recency');
-  assert.equal(recencyGroups.length, 1);
-  assert.ok(recencyGroups[0].label.includes('1+'));
-  assert.ok(recencyGroups[0].tabs.some(t => t.id === week1.id));
-  assert.ok(recencyGroups[0].tabs.some(t => t.id === week2.id));
-});
-
-test('shows both recency groups when 3-day set is strictly larger than 1-week set', () => {
-  const active = tab(1, 'https://github.com/');
-  const sameHost = tab(2, 'https://github.com/foo');
-  const day4a = tab(3, 'https://a.com/', { lastAccessed: NOW - 4 * DAY });
-  const day4b = tab(4, 'https://b.com/', { lastAccessed: NOW - 5 * DAY });
-  const week1 = tab(5, 'https://c.com/', { lastAccessed: NOW - 8 * DAY });
-  const week2 = tab(6, 'https://d.com/', { lastAccessed: NOW - 9 * DAY });
-  const groups = generateGroups(active, [active, sameHost, day4a, day4b, week1, week2]);
-  const recencyGroups = groups.filter(g => g.strategy === 'recency');
-  assert.equal(recencyGroups.length, 2);
-  assert.ok(recencyGroups.some(g => g.label.includes('3+')));
-  assert.ok(recencyGroups.some(g => g.label.includes('1+')));
-});
-
-test('tabs without lastAccessed are excluded from recency groups', () => {
-  const active = tab(1, 'https://github.com/');
-  const sameHost = tab(2, 'https://github.com/foo');
-  const noAccess = tab(3, 'https://a.com/');
-  delete noAccess.lastAccessed;
-  const groups = generateGroups(active, [active, sameHost, noAccess]);
-  const recencyGroups = groups.filter(g => g.strategy === 'recency');
-  assert.equal(recencyGroups.length, 0);
-});
 
 // ── unparsable active tab ─────────────────────────────────────────────────────
 
@@ -341,14 +248,6 @@ test('no domain group for chrome:// tabs', () => {
   assert.equal(groups.filter(g => g.strategy === 'domain').length, 0);
 });
 
-test('chrome://newtab still triggers newtab group, not hostname group', () => {
-  const active = tab(1, 'chrome://newtab/');
-  const nt1 = tab(2, 'chrome://newtab/');
-  const nt2 = tab(3, 'chrome://newtab/');
-  const groups = generateGroups(active, [active, nt1, nt2]);
-  assert.equal(groups.filter(g => g.strategy === 'hostname').length, 0);
-  assert.ok(groups.find(g => g.strategy === 'newtab'));
-});
 
 // ── localhost / port grouping ─────────────────────────────────────────────────
 
