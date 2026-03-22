@@ -107,7 +107,7 @@ function renderGroupList(app, activeTab, groups, checkState) {
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k','navigate'],['l/↵','open'],['d','close all'],['D','keep current'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/→/↵','open'],['d','close all'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -185,7 +185,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k','navigate'],['h','back'],['x','toggle'],['d','close checked'],['D','keep current'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['d','close checked'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);

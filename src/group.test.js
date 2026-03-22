@@ -251,3 +251,67 @@ test('dedupeByCount keeps all groups when counts are distinct', () => {
   const deduped = dedupeByCount(groups);
   assert.equal(deduped.length, 3);
 });
+
+test('dedupeByCount removes a group when it has the same tab count as an earlier group', () => {
+  // hostname(1 tab) → count=2, domain(1 tab) → count=2: domain should be removed
+  const g = (strategy, count) => ({ strategy, tabs: Array(count).fill({}) });
+  const groups = [g('hostname', 1), g('domain', 1)];
+  const deduped = dedupeByCount(groups);
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].strategy, 'hostname');
+});
+
+// ── recency edge cases ────────────────────────────────────────────────────────
+
+test('shows only 1-week group when no tabs are in 3-7 day window', () => {
+  const active = tab(1, 'https://github.com/');
+  const sameHost = tab(2, 'https://github.com/foo');
+  const week1 = tab(3, 'https://a.com/', { lastAccessed: NOW - 8 * DAY });
+  const week2 = tab(4, 'https://b.com/', { lastAccessed: NOW - 9 * DAY });
+  const groups = generateGroups(active, [active, sameHost, week1, week2]);
+  const recencyGroups = groups.filter(g => g.strategy === 'recency');
+  assert.equal(recencyGroups.length, 1);
+  assert.ok(recencyGroups[0].label.includes('1+'));
+  assert.ok(recencyGroups[0].tabs.some(t => t.id === week1.id));
+  assert.ok(recencyGroups[0].tabs.some(t => t.id === week2.id));
+});
+
+test('shows both recency groups when 3-day set is strictly larger than 1-week set', () => {
+  const active = tab(1, 'https://github.com/');
+  const sameHost = tab(2, 'https://github.com/foo');
+  const day4a = tab(3, 'https://a.com/', { lastAccessed: NOW - 4 * DAY });
+  const day4b = tab(4, 'https://b.com/', { lastAccessed: NOW - 5 * DAY });
+  const week1 = tab(5, 'https://c.com/', { lastAccessed: NOW - 8 * DAY });
+  const week2 = tab(6, 'https://d.com/', { lastAccessed: NOW - 9 * DAY });
+  const groups = generateGroups(active, [active, sameHost, day4a, day4b, week1, week2]);
+  const recencyGroups = groups.filter(g => g.strategy === 'recency');
+  assert.equal(recencyGroups.length, 2);
+  assert.ok(recencyGroups.some(g => g.label.includes('3+')));
+  assert.ok(recencyGroups.some(g => g.label.includes('1+')));
+});
+
+test('tabs without lastAccessed are excluded from recency groups', () => {
+  const active = tab(1, 'https://github.com/');
+  const sameHost = tab(2, 'https://github.com/foo');
+  const noAccess = tab(3, 'https://a.com/');
+  delete noAccess.lastAccessed;
+  const groups = generateGroups(active, [active, sameHost, noAccess]);
+  const recencyGroups = groups.filter(g => g.strategy === 'recency');
+  assert.equal(recencyGroups.length, 0);
+});
+
+// ── unparsable active tab ─────────────────────────────────────────────────────
+
+test('returns empty groups for unparsable active tab URL', () => {
+  const active = { id: 1, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
+  const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
+  const groups = generateGroups(active, [active, ...others]);
+  assert.equal(groups.length, 0);
+});
+
+test('returns empty groups for file:// active tab URL', () => {
+  const active = { id: 1, url: 'file:///Users/foo/doc.html', title: 'Doc', pinned: false, lastAccessed: NOW };
+  const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
+  const groups = generateGroups(active, [active, ...others]);
+  assert.equal(groups.length, 0);
+});
