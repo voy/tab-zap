@@ -302,16 +302,73 @@ test('tabs without lastAccessed are excluded from recency groups', () => {
 
 // ── unparsable active tab ─────────────────────────────────────────────────────
 
-test('returns empty groups for unparsable active tab URL', () => {
-  const active = { id: 1, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
-  const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
-  const groups = generateGroups(active, [active, ...others]);
-  assert.equal(groups.length, 0);
-});
-
 test('returns empty groups for file:// active tab URL', () => {
   const active = { id: 1, url: 'file:///Users/foo/doc.html', title: 'Doc', pinned: false, lastAccessed: NOW };
   const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
   const groups = generateGroups(active, [active, ...others]);
   assert.equal(groups.length, 0);
+});
+
+// ── chrome:// grouping ────────────────────────────────────────────────────────
+
+test('chrome://extensions active tab forms a hostname group', () => {
+  const active = { id: 1, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
+  const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
+  const groups = generateGroups(active, [active, ...others]);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup);
+  assert.equal(hostGroup.label, 'extensions');
+  assert.equal(hostGroup.tabs.length, 0); // no other chrome://extensions tabs
+});
+
+test('groups chrome:// tabs by hostname', () => {
+  const active = { id: 1, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
+  const ext2 = { id: 2, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
+  const settings = { id: 3, url: 'chrome://settings', title: 'Settings', pinned: false, lastAccessed: NOW };
+  const groups = generateGroups(active, [active, ext2, settings]);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup);
+  assert.equal(hostGroup.label, 'extensions');
+  assert.equal(hostGroup.tabs.length, 1);
+  assert.equal(hostGroup.tabs[0].id, 2);
+});
+
+test('no domain group for chrome:// tabs', () => {
+  const active = { id: 1, url: 'chrome://extensions', title: 'Extensions', pinned: false, lastAccessed: NOW };
+  const settings = { id: 2, url: 'chrome://settings', title: 'Settings', pinned: false, lastAccessed: NOW };
+  const history = { id: 3, url: 'chrome://history', title: 'History', pinned: false, lastAccessed: NOW };
+  const groups = generateGroups(active, [active, settings, history]);
+  assert.equal(groups.filter(g => g.strategy === 'domain').length, 0);
+});
+
+test('chrome://newtab still triggers newtab group, not hostname group', () => {
+  const active = tab(1, 'chrome://newtab/');
+  const nt1 = tab(2, 'chrome://newtab/');
+  const nt2 = tab(3, 'chrome://newtab/');
+  const groups = generateGroups(active, [active, nt1, nt2]);
+  assert.equal(groups.filter(g => g.strategy === 'hostname').length, 0);
+  assert.ok(groups.find(g => g.strategy === 'newtab'));
+});
+
+// ── localhost / port grouping ─────────────────────────────────────────────────
+
+test('localhost tabs on same port group together', () => {
+  const active = tab(1, 'http://localhost:3000/');
+  const other = tab(2, 'http://localhost:3000/about');
+  const groups = generateGroups(active, [active, other]);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup);
+  assert.equal(hostGroup.label, 'localhost:3000');
+  assert.equal(hostGroup.tabs.length, 1);
+});
+
+test('localhost tabs on different ports form separate groups', () => {
+  const active = tab(1, 'http://localhost:3000/');
+  const samePort = tab(2, 'http://localhost:3000/about');
+  const diffPort = tab(3, 'http://localhost:8080/');
+  const groups = generateGroups(active, [active, samePort, diffPort]);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup);
+  assert.equal(hostGroup.tabs.length, 1); // only samePort matches
+  assert.equal(hostGroup.tabs[0].id, 2);
 });
