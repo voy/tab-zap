@@ -297,21 +297,20 @@ body {
 
 .key-hints {
   display: none;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  padding: 6px 14px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  padding: 8px 14px;
   border-top: 1px solid #f0f0f0;
 }
 
 .key-hints.visible {
-  display: flex;
+  display: grid;
 }
 
 .key-hint-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 10px;
   color: #aaa;
   white-space: nowrap;
@@ -325,11 +324,6 @@ body {
   background: #ececec;
   border-radius: 3px;
   padding: 1px 5px;
-}
-
-.key-hint-sep {
-  font-size: 10px;
-  color: #ddd;
   flex-shrink: 0;
 }
 
@@ -497,7 +491,5 @@ body {
     background: #2c2c2e;
   }
 
-  .key-hint-sep {
-    color: #3a3a3c;
-  }
 }
+

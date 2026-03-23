@@ -68,7 +68,7 @@ function renderEmpty(app, activeTab) {
 }
 
 function keyHints(items) {
-  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span>${esc(label)}</span>`).join('<span class="key-hint-sep">·</span>')}</div>`;
+  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span>${esc(label)}</span>`).join('')}</div>`;
 }
 
 function applyHintsVisibility(app) {
