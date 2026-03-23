@@ -68,7 +68,7 @@ function renderEmpty(app, activeTab) {
 }
 
 function keyHints(items) {
-  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span>${esc(label)}</span>`).join('')}</div>`;
+  return `<div class="key-hints">${items.map(([k, label]) => `<span class="key-hint-item"><span class="key-hint-key">${esc(k)}</span><span class="key-hint-colon">:</span><span class="key-hint-label">${esc(label)}</span></span>`).join('')}</div>`;
 }
 
 function applyHintsVisibility(app) {
@@ -270,12 +270,18 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
     ].filter(Boolean);
     const cur = navItems.indexOf(document.activeElement);
 
+    const isOnHints = document.activeElement === app.querySelector('.hints-btn');
+    const effectiveCur = isOnHints ? 0 : cur;
+
     if (e.key === 'ArrowDown' || e.key === 'j') {
       e.preventDefault();
-      navItems[(cur + 1) % navItems.length]?.focus();
+      navItems[(effectiveCur + 1) % navItems.length]?.focus();
     } else if (e.key === 'ArrowUp' || e.key === 'k') {
       e.preventDefault();
-      navItems[(cur - 1 + navItems.length) % navItems.length]?.focus();
+      navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus();
+    } else if ((e.key === 'l' || e.key === 'ArrowRight') && document.activeElement === app.querySelector('.back-btn')) {
+      e.preventDefault();
+      app.querySelector('.hints-btn')?.focus();
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
     } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
