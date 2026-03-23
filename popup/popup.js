@@ -184,7 +184,7 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['d','close checked'],['D','keep current'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['*a','select all'],['*n','deselect all'],['d','close checked'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -229,10 +229,42 @@ function renderChecklist(app, activeTab, group, groups, groupIndex, checkState) 
 
   app.querySelector('#close-btn').focus();
 
+  let pendingChord = null;
+  let chordTimer = null;
+
+  function clearChord() {
+    pendingChord = null;
+    clearTimeout(chordTimer);
+    chordTimer = null;
+  }
+
   setKeyHandler(e => {
+    if (pendingChord === '*') {
+      clearChord();
+      if (e.key === 'a') {
+        e.preventDefault();
+        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = true; });
+        updateCloseButton();
+        return;
+      } else if (e.key === 'n') {
+        e.preventDefault();
+        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+        updateCloseButton();
+        return;
+      }
+    }
+
+    if (e.key === '*') {
+      e.preventDefault();
+      clearChord();
+      pendingChord = '*';
+      chordTimer = setTimeout(clearChord, 1500);
+      return;
+    }
+
     const navItems = [
       app.querySelector('.back-btn'),
-      app.querySelector('#close-btn'),
+      app.querySelector('#close-btn:not(:disabled)'),
       app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn'),
       ...app.querySelectorAll('input[type=checkbox]'),
     ].filter(Boolean);
