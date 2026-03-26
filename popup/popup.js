@@ -161,12 +161,16 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = []) {
       if (isBig) {
         if (e.key === 'D') return;
         const topI = parseInt(items[cur].dataset.topIndex);
-        chrome.tabs.remove(topGroups[topI].tabs.map(t => t.id)).catch(() => {});
-        const newTopGroups = topGroups.filter((_, idx) => idx !== topI);
-        if (groups.length === 0 && newTopGroups.length === 0) { window.close(); return; }
-        renderGroupList(app, activeTab, groups, checkState, newTopGroups);
-        const newItems = [...app.querySelectorAll('.group-item')];
-        newItems[Math.min(cur, newItems.length - 1)]?.focus();
+        (async () => {
+          try { await chrome.tabs.remove(topGroups[topI].tabs.map(t => t.id)); } catch {}
+          const freshAllTabs = await chrome.tabs.query({ currentWindow: true });
+          const newExcludeIds = new Set([activeTab.id, ...groups.flatMap(g => g.tabs.map(t => t.id))]);
+          const newTopGroups = generateTopGroups(freshAllTabs, newExcludeIds);
+          if (groups.length === 0 && newTopGroups.length === 0) { window.close(); return; }
+          renderGroupList(app, activeTab, groups, checkState, newTopGroups);
+          const newItems = [...app.querySelectorAll('.group-item')];
+          newItems[Math.min(cur, newItems.length - 1)]?.focus();
+        })();
       } else {
         const i = parseInt(items[cur].dataset.index);
         if (e.key === 'D') {
