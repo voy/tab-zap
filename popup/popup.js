@@ -94,7 +94,7 @@ function tabCount(g) {
     : g.tabs.length + 1;
 }
 
-function renderGroupList(app, activeTab, groups, checkState, topGroups = [], focusTopIndex = null) {
+function renderGroupList(app, activeTab, groups, checkState, topGroups = [], focusTopIndex = null, focusIndex = null) {
   app.innerHTML = `
     <div class="header">
       <div class="header-row">
@@ -137,7 +137,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
         const i = parseInt(el.dataset.index);
         renderChecklist(
           app, activeTab, groups[i],
-          () => renderGroupList(app, activeTab, groups, checkState, topGroups),
+          () => renderGroupList(app, activeTab, groups, checkState, topGroups, null, i),
           checkState, i
         );
       }
@@ -147,7 +147,9 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
 
   (focusTopIndex !== null
     ? app.querySelector(`[data-top-index="${focusTopIndex}"]`)
-    : app.querySelector('.group-item')
+    : focusIndex !== null
+      ? app.querySelector(`[data-index="${focusIndex}"]`)
+      : app.querySelector('.group-item')
   )?.focus();
 
   setKeyHandler(e => {
@@ -271,6 +273,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
         e.preventDefault();
         app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
         updateCloseButton();
+        app.querySelector('#close-btn')?.focus();
         return;
       }
     }
@@ -411,6 +414,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
         e.preventDefault();
         app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
         updateCloseButton();
+        app.querySelector('#close-btn')?.focus();
         return;
       }
     }
