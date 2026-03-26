@@ -293,13 +293,16 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
     const cur = navItems.indexOf(document.activeElement);
     const isOnHints = document.activeElement === app.querySelector('.hints-btn');
     const effectiveCur = isOnHints ? 0 : cur;
+    const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
 
     if (e.key === 'ArrowDown' || e.key === 'j') {
       e.preventDefault();
-      navItems[(effectiveCur + 1) % navItems.length]?.focus();
+      if (effectiveCur === -1) { checkboxes[0]?.focus(); }
+      else { navItems[(effectiveCur + 1) % navItems.length]?.focus(); }
     } else if (e.key === 'ArrowUp' || e.key === 'k') {
       e.preventDefault();
-      navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus();
+      if (effectiveCur === -1) { checkboxes[checkboxes.length - 1]?.focus(); }
+      else { navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus(); }
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
     } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
@@ -414,7 +417,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
         e.preventDefault();
         app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
         updateCloseButton();
-        app.querySelector('#close-btn')?.focus();
+        app.querySelectorAll('input[type=checkbox]')[0]?.focus();
         return;
       }
     }
@@ -437,13 +440,16 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
 
     const isOnHints = document.activeElement === app.querySelector('.hints-btn');
     const effectiveCur = isOnHints ? 0 : cur;
+    const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
 
     if (e.key === 'ArrowDown' || e.key === 'j') {
       e.preventDefault();
-      navItems[(effectiveCur + 1) % navItems.length]?.focus();
+      if (effectiveCur === -1) { checkboxes[0]?.focus(); }
+      else { navItems[(effectiveCur + 1) % navItems.length]?.focus(); }
     } else if (e.key === 'ArrowUp' || e.key === 'k') {
       e.preventDefault();
-      navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus();
+      if (effectiveCur === -1) { checkboxes[checkboxes.length - 1]?.focus(); }
+      else { navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus(); }
     } else if ((e.key === 'l' || e.key === 'ArrowRight') && document.activeElement === app.querySelector('.back-btn')) {
       e.preventDefault();
       app.querySelector('.hints-btn')?.focus();
