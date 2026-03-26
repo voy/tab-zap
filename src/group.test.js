@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateGroups } from './group.js';
+import { generateGroups, generateTopGroups } from './group.js';
 
 const NOW = Date.now();
 
@@ -247,4 +247,122 @@ test('localhost tabs on different ports form separate groups', () => {
   assert.ok(hostGroup);
   assert.equal(hostGroup.tabs.length, 1); // only samePort matches
   assert.equal(hostGroup.tabs[0].id, 2);
+});
+
+
+// ── generateTopGroups ─────────────────────────────────────────────────────────
+
+test('generateTopGroups returns top 3 groups sorted by tab count descending', () => {
+  const tabs = [
+    tab(1, 'https://github.com/a'),
+    tab(2, 'https://github.com/b'),
+    tab(3, 'https://github.com/c'),
+    tab(4, 'https://github.com/d'),  // 4 github
+    tab(5, 'https://twitter.com/a'),
+    tab(6, 'https://twitter.com/b'),
+    tab(7, 'https://twitter.com/c'),  // 3 twitter
+    tab(8, 'https://reddit.com/a'),
+    tab(9, 'https://reddit.com/b'),   // 2 reddit
+    tab(10, 'https://niche.com/'),    // 1 - excluded by min size
+  ];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top.length, 3);
+  assert.equal(top[0].label, 'github.com');
+  assert.equal(top[0].tabs.length, 4);
+  assert.equal(top[1].label, 'twitter.com');
+  assert.equal(top[1].tabs.length, 3);
+  assert.equal(top[2].label, 'reddit.com');
+  assert.equal(top[2].tabs.length, 2);
+});
+
+test('generateTopGroups returns at most 3 groups even when more qualify', () => {
+  const tabs = [
+    tab(1, 'https://a.com/'), tab(2, 'https://a.com/'),
+    tab(3, 'https://b.com/'), tab(4, 'https://b.com/'),
+    tab(5, 'https://c.com/'), tab(6, 'https://c.com/'),
+    tab(7, 'https://d.com/'), tab(8, 'https://d.com/'),
+  ];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top.length, 3);
+});
+
+test('generateTopGroups excludes tabs with IDs in excludeTabIds', () => {
+  const tabs = [
+    tab(1, 'https://github.com/a'),
+    tab(2, 'https://github.com/b'),
+    tab(3, 'https://github.com/c'),
+    tab(4, 'https://twitter.com/a'),
+    tab(5, 'https://twitter.com/b'),
+  ];
+  const top = generateTopGroups(tabs, new Set([1, 2, 3]));
+  assert.equal(top.length, 1);
+  assert.equal(top[0].label, 'twitter.com');
+});
+
+test('generateTopGroups excludes pinned tabs', () => {
+  const tabs = [
+    tab(1, 'https://github.com/a', { pinned: true }),
+    tab(2, 'https://github.com/b', { pinned: true }),
+    tab(3, 'https://github.com/c', { pinned: true }),
+    tab(4, 'https://twitter.com/a'),
+    tab(5, 'https://twitter.com/b'),
+  ];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top.length, 1);
+  assert.equal(top[0].label, 'twitter.com');
+});
+
+test('generateTopGroups excludes groups smaller than 2 tabs', () => {
+  const tabs = [
+    tab(1, 'https://github.com/a'),
+    tab(2, 'https://github.com/b'),
+    tab(3, 'https://unique.com/'),
+  ];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top.length, 1);
+  assert.equal(top[0].label, 'github.com');
+});
+
+test('generateTopGroups returns empty array when no groups qualify', () => {
+  const tabs = [tab(1, 'https://a.com/'), tab(2, 'https://b.com/')];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top.length, 0);
+});
+
+test('generateTopGroups uses top strategy', () => {
+  const tabs = [tab(1, 'https://github.com/a'), tab(2, 'https://github.com/b')];
+  const top = generateTopGroups(tabs, new Set());
+  assert.equal(top[0].strategy, 'top');
+});
+
+test('generateTopGroups partial exclusion reduces group size and can drop it below minimum', () => {
+  const tabs = [
+    tab(1, 'https://github.com/a'),
+    tab(2, 'https://github.com/b'),
+    tab(3, 'https://github.com/c'),
+    tab(4, 'https://twitter.com/a'),
+    tab(5, 'https://twitter.com/b'),
+  ];
+  // exclude 2 of 3 github tabs → github drops to 1 tab → below minimum, excluded
+  const top = generateTopGroups(tabs, new Set([1, 2]));
+  assert.equal(top.length, 1);
+  assert.equal(top[0].label, 'twitter.com');
+});
+
+test('generateTopGroups deduplication: excludeIds from current groups prevents double-listing', () => {
+  const active = tab(1, 'https://github.com/');
+  const gh2 = tab(2, 'https://github.com/foo');
+  const gh3 = tab(3, 'https://github.com/bar');
+  const tw1 = tab(4, 'https://twitter.com/a');
+  const tw2 = tab(5, 'https://twitter.com/b');
+  const allTabs = [active, gh2, gh3, tw1, tw2];
+
+  const groups = generateGroups(active, allTabs);
+  const excludeIds = new Set([active.id, ...groups.flatMap(g => g.tabs.map(t => t.id))]);
+  const top = generateTopGroups(allTabs, excludeIds);
+
+  // github tabs are in current groups → excluded from top groups
+  assert.ok(top.every(g => g.label !== 'github.com'), 'github should not appear in top groups');
+  // twitter has 2 tabs not in current groups → should appear
+  assert.ok(top.some(g => g.label === 'twitter.com'));
 });

@@ -90,6 +90,18 @@ body {
   position: relative;
 }
 
+.group-section-heading {
+  list-style: none;
+  padding: 10px 10px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #aaa;
+  pointer-events: none;
+  user-select: none;
+}
+
 .group-divider {
   height: 0;
   border-bottom: 1px solid #e8e8e8;
@@ -384,6 +396,10 @@ body {
 
   .group-item {
     border-bottom-color: #2c2c2e;
+  }
+
+  .group-section-heading {
+    color: #666;
   }
 
   .group-divider {

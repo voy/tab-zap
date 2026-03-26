@@ -7,6 +7,23 @@ const MIN_GROUP_SIZE = 2;
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
+export function generateTopGroups(allTabs, excludeTabIds) {
+  const byHostname = new Map();
+  for (const t of allTabs) {
+    if (t.pinned) continue;
+    if (excludeTabIds.has(t.id)) continue;
+    const p = parseUrl(t.url);
+    if (!p) continue;
+    if (!byHostname.has(p.hostname)) byHostname.set(p.hostname, []);
+    byHostname.get(p.hostname).push(t);
+  }
+  return [...byHostname.entries()]
+    .filter(([, tabs]) => tabs.length >= MIN_GROUP_SIZE)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3)
+    .map(([hostname, tabs]) => ({ label: hostname, strategy: 'top', tabs }));
+}
+
 export function generateGroups(activeTab, allTabs) {
   const allOtherTabs = allTabs.filter(t => t.id !== activeTab.id && !t.pinned);
 
