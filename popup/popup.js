@@ -94,7 +94,7 @@ function tabCount(g) {
     : g.tabs.length + 1;
 }
 
-function renderGroupList(app, activeTab, groups, checkState, topGroups = []) {
+function renderGroupList(app, activeTab, groups, checkState, topGroups = [], focusTopIndex = null) {
   app.innerHTML = `
     <div class="header">
       <div class="header-row">
@@ -132,7 +132,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = []) {
     el.addEventListener('click', () => {
       if (el.dataset.big === 'true') {
         const topI = parseInt(el.dataset.topIndex);
-        renderTopChecklist(app, activeTab, topGroups[topI], groups, checkState, topGroups);
+        renderTopChecklist(app, activeTab, topGroups[topI], topI, groups, checkState, topGroups);
       } else {
         const i = parseInt(el.dataset.index);
         renderChecklist(
@@ -145,7 +145,10 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = []) {
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.click(); } });
   });
 
-  app.querySelector('.group-item')?.focus();
+  (focusTopIndex !== null
+    ? app.querySelector(`[data-top-index="${focusTopIndex}"]`)
+    : app.querySelector('.group-item')
+  )?.focus();
 
   setKeyHandler(e => {
     const items = [...app.querySelectorAll('.group-item')];
@@ -199,8 +202,8 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = []) {
   });
 }
 
-function renderTopChecklist(app, activeTab, bigGroup, groups, checkState, topGroups) {
-  const backFn = () => renderGroupList(app, activeTab, groups, checkState, topGroups);
+function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, topGroups) {
+  const backFn = () => renderGroupList(app, activeTab, groups, checkState, topGroups, topI);
 
   app.innerHTML = `
     <div class="header">
