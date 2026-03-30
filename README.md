@@ -26,7 +26,7 @@ Tab Zap is keyboard-first with vim-style bindings.
 |-----|--------|
 | `j` / `↓` | Next group |
 | `k` / `↑` | Previous group |
-| `l` / `→` / `↵` / `spc` | Open group checklist |
+| `l` / `o` / `→` / `↵` / `spc` | Open group checklist |
 | `d` | Close all tabs in the group (and current tab) |
 | `D` | Close all tabs in the group, keep current tab |
 | `?` | Toggle keyboard hints |

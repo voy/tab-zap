@@ -124,7 +124,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
         </li>`).join('')}
       ` : ''}
     </ul>
-    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/→/↵/spc','open'],['d','close all'],['D','keep current'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/o/→/↵/spc','open'],['d','close all'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -157,7 +157,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
     const cur = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
     else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
-    else if ((e.key === 'l' || e.key === 'ArrowRight' || e.key === ' ') && cur !== -1) { e.preventDefault(); items[cur].click(); }
+    else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight' || e.key === ' ') && cur !== -1) { e.preventDefault(); items[cur].click(); }
     else if (e.key === '?') { e.preventDefault(); toggleHints(app); }
     else if (e.key === 'Escape' || e.key === 'q') window.close();
     else if ((e.key === 'd' || e.key === 'D') && cur !== -1) {
