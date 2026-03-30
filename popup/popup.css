@@ -350,6 +350,18 @@ body {
   align-self: center;
 }
 
+/* ── Pinned footnote ── */
+
+.pinned-footnote {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 6px 14px 8px;
+  color: #ccc;
+}
+
 /* ── Empty state ── */
 
 .empty {
@@ -489,6 +501,10 @@ body {
 
   .btn:focus-visible {
     outline-color: #aaa;
+  }
+
+  .pinned-footnote {
+    color: #555;
   }
 
   .empty {

@@ -1,4 +1,5 @@
 import { generateGroups, generateTopGroups } from '../src/group.js';
+import { parseUrl } from '../src/parse.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
@@ -11,6 +12,7 @@ const STRATEGY_LABELS = {
 
 let shortcutHint = '';
 let hintsVisible = false;
+let pinnedDuplicateHostname = null;
 
 async function init() {
   const app = document.getElementById('app');
@@ -23,6 +25,13 @@ async function init() {
     shortcutHint = cmd?.shortcut ? formatShortcut(cmd.shortcut) : '';
 
     const allTabs = await chrome.tabs.query({ currentWindow: true });
+    if (!activeTab.pinned) {
+      const activeParsed = parseUrl(activeTab.url);
+      if (activeParsed) {
+        const pinned = allTabs.find(t => t.pinned && t.id !== activeTab.id && parseUrl(t.url)?.hostname === activeParsed.hostname);
+        pinnedDuplicateHostname = pinned ? activeParsed.hostname : null;
+      }
+    }
     const groups = generateGroups(activeTab, allTabs);
     const excludeIds = new Set([activeTab.id, ...groups.flatMap(g => g.tabs.map(t => t.id))]);
     const topGroups = generateTopGroups(allTabs, excludeIds);
@@ -124,6 +133,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
         </li>`).join('')}
       ` : ''}
     </ul>
+    ${pinnedDuplicateHostname ? `<div class="pinned-footnote"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> pinned copy is open</div>` : ''}
     ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/o/→/↵/spc','open'],['d','close all'],['D','keep current'],['q','quit']])}
   `;
 
