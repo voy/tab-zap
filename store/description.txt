@@ -1,9 +1,9 @@
-You finish reading an article and the tab just… stays open. You look something up, open three more tabs, forget about them. You're researching a trip and suddenly you have seventeen tabs about hotels in Lisbon that you're definitely not going back to.
+Tab Zap is a tab manager carefully crafted for a minimalist aesthetic and keyboard-first workflow — built exactly the way I want to use it myself. No clutter, no settings rabbit holes, just a clean way to close the tabs you no longer need.
 
-Tab Zap is a Chrome extension that helps you clean up. Click the icon and it groups your open tabs — all your Gmail tabs, all your Twitter tabs, everything from the same site, and the ones you haven't touched in days. One click closes the whole group.
+Click the icon and it shows you what to close — other tabs on the same site as the one you're on, and the biggest clusters across your open tabs. One click closes the whole group.
 
 Need to be more selective? Open any group to see a checklist and uncheck the tabs you want to keep before closing.
 
-Prefer the keyboard? Tab Zap is fully keyboard-driven: navigate groups with j/k, open with l, close with d, go back with h. Press ? to see all shortcuts.
+Fully keyboard-driven: navigate with arrow keys, or vim-style bindings if you're that way inclined. Press ? to see all shortcuts.
 
 No setup, no folders, no fuss. Your browser is not a to-do list — Tab Zap helps you treat it like one less thing to worry about.
