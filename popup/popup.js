@@ -1,13 +1,12 @@
-import { generateGroups, generateTopGroups } from '../src/group.js';
+import { generateGroups, generateTopGroups, generateOtherGroup } from '../src/group.js';
 import { parseUrl } from '../src/parse.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
   peer:     { text: 'peer', tip: 'All tabs on this hostname' },
   domain:   { text: 'site', tip: 'All tabs on the same site (across subdomains)' },
-  recency:  { text: 'age',  tip: 'Tabs not accessed recently' },
-  newtab:   { text: 'new',  tip: 'New tab pages that were never used' },
   top:      { text: 'big',  tip: 'One of the largest tab groups across all open tabs' },
+  other:    { text: 'etc',  tip: 'Remaining tabs not in any group, oldest first' },
 };
 
 let shortcutHint = '';
@@ -35,12 +34,14 @@ async function init() {
     const groups = generateGroups(activeTab, allTabs);
     const excludeIds = new Set([activeTab.id, ...groups.flatMap(g => g.tabs.map(t => t.id))]);
     const topGroups = generateTopGroups(allTabs, excludeIds);
+    const topExcludeIds = new Set([...excludeIds, ...topGroups.flatMap(g => g.tabs.map(t => t.id))]);
+    const otherGroup = generateOtherGroup(allTabs, topExcludeIds);
     const checkState = new Map();
 
-    if (groups.length === 0 && topGroups.length === 0) {
+    if (groups.length === 0 && topGroups.length === 0 && !otherGroup) {
       renderEmpty(app, activeTab);
     } else {
-      renderGroupList(app, activeTab, groups, checkState, topGroups);
+      renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup);
     }
   } catch (err) {
     app.innerHTML = `<div class="actions"><div class="empty">Something went wrong: ${esc(String(err?.message ?? err))}</div></div>`;
@@ -98,12 +99,12 @@ function attachHintsToggle(app) {
 }
 
 function tabCount(g) {
-  return (g.strategy === 'recency' || g.strategy === 'newtab' || g.strategy === 'peer' || g.strategy === 'top')
+  return (['peer', 'top', 'other'].includes(g.strategy))
     ? g.tabs.length
     : g.tabs.length + 1;
 }
 
-function renderGroupList(app, activeTab, groups, checkState, topGroups = [], focusTopIndex = null, focusIndex = null) {
+function renderGroupList(app, activeTab, groups, checkState, topGroups = [], otherGroup = null, focusTopIndex = null, focusIndex = null) {
   app.innerHTML = `
     <div class="header">
       <div class="header-row">
@@ -132,6 +133,13 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
           <span class="group-count">${g.tabs.length} tabs</span>
         </li>`).join('')}
       ` : ''}
+      ${otherGroup ? `
+        <li class="group-item" tabindex="0" data-other="true">
+          <span class="strategy-badge" title="${esc(STRATEGY_LABELS.other.tip)}">${esc(STRATEGY_LABELS.other.text)}</span>
+          <span class="group-label">${esc(otherGroup.label)}</span>
+          <span class="group-count">${otherGroup.tabs.length} tabs</span>
+        </li>
+      ` : ''}
     </ul>
     ${pinnedDuplicateHostname ? `<div class="pinned-footnote"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> pinned copy is open</div>` : ''}
     ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/o/→/↵/spc','open'],['d','close all'],['D','keep current'],['q','quit']])}
@@ -140,14 +148,20 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
   attachHintsToggle(app);
   app.querySelectorAll('.group-item').forEach(el => {
     el.addEventListener('click', () => {
-      if (el.dataset.big === 'true') {
+      if (el.dataset.other === 'true') {
+        renderChecklist(
+          app, activeTab, otherGroup,
+          () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup),
+          checkState, 'other'
+        );
+      } else if (el.dataset.big === 'true') {
         const topI = parseInt(el.dataset.topIndex);
-        renderTopChecklist(app, activeTab, topGroups[topI], topI, groups, checkState, topGroups);
+        renderTopChecklist(app, activeTab, topGroups[topI], topI, groups, checkState, topGroups, otherGroup);
       } else {
         const i = parseInt(el.dataset.index);
         renderChecklist(
           app, activeTab, groups[i],
-          () => renderGroupList(app, activeTab, groups, checkState, topGroups, null, i),
+          () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, null, i),
           checkState, i
         );
       }
@@ -172,8 +186,15 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
     else if (e.key === 'Escape' || e.key === 'q') window.close();
     else if ((e.key === 'd' || e.key === 'D') && cur !== -1) {
       e.preventDefault();
+      const isOther = items[cur].dataset.other === 'true';
       const isBig = items[cur].dataset.big === 'true';
-      if (isBig) {
+      if (isOther) {
+        if (e.key === 'D') return;
+        (async () => {
+          try { await chrome.tabs.remove(otherGroup.tabs.map(t => t.id)); } catch {}
+          init();
+        })();
+      } else if (isBig) {
         if (e.key === 'D') return;
         const topI = parseInt(items[cur].dataset.topIndex);
         (async () => {
@@ -181,8 +202,10 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
           const freshAllTabs = await chrome.tabs.query({ currentWindow: true });
           const newExcludeIds = new Set([activeTab.id, ...groups.flatMap(g => g.tabs.map(t => t.id))]);
           const newTopGroups = generateTopGroups(freshAllTabs, newExcludeIds);
-          if (groups.length === 0 && newTopGroups.length === 0) { window.close(); return; }
-          renderGroupList(app, activeTab, groups, checkState, newTopGroups);
+          const newTopExcludeIds = new Set([...newExcludeIds, ...newTopGroups.flatMap(g => g.tabs.map(t => t.id))]);
+          const newOtherGroup = generateOtherGroup(freshAllTabs, newTopExcludeIds);
+          if (groups.length === 0 && newTopGroups.length === 0 && !newOtherGroup) { window.close(); return; }
+          renderGroupList(app, activeTab, groups, checkState, newTopGroups, newOtherGroup);
           const newItems = [...app.querySelectorAll('.group-item')];
           newItems[Math.min(cur, newItems.length - 1)]?.focus();
         })();
@@ -192,8 +215,8 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
           if (groups[i].tabs.length === 0) return;
           chrome.tabs.remove(groups[i].tabs.map(t => t.id)).catch(() => {});
           const newGroups = groups.filter((_, idx) => idx !== i);
-          if (newGroups.length === 0 && topGroups.length === 0) { window.close(); return; }
-          renderGroupList(app, activeTab, newGroups, checkState, topGroups);
+          if (newGroups.length === 0 && topGroups.length === 0 && !otherGroup) { window.close(); return; }
+          renderGroupList(app, activeTab, newGroups, checkState, topGroups, otherGroup);
           const newItems = [...app.querySelectorAll('.group-item')];
           newItems[Math.min(cur, newItems.length - 1)]?.focus();
         } else {
@@ -205,8 +228,10 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
             const newGroups = generateGroups(newActiveTab, freshAllTabs);
             const newExcludeIds = new Set([newActiveTab.id, ...newGroups.flatMap(g => g.tabs.map(t => t.id))]);
             const newTopGroups = generateTopGroups(freshAllTabs, newExcludeIds);
-            if (newGroups.length === 0 && newTopGroups.length === 0) { window.close(); return; }
-            renderGroupList(app, newActiveTab, newGroups, checkState, newTopGroups);
+            const newTopExcludeIds = new Set([...newExcludeIds, ...newTopGroups.flatMap(g => g.tabs.map(t => t.id))]);
+            const newOtherGroup = generateOtherGroup(freshAllTabs, newTopExcludeIds);
+            if (newGroups.length === 0 && newTopGroups.length === 0 && !newOtherGroup) { window.close(); return; }
+            renderGroupList(app, newActiveTab, newGroups, checkState, newTopGroups, newOtherGroup);
           })();
         }
       }
@@ -214,8 +239,8 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], foc
   });
 }
 
-function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, topGroups) {
-  const backFn = () => renderGroupList(app, activeTab, groups, checkState, topGroups, topI);
+function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, topGroups, otherGroup = null) {
+  const backFn = () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, topI);
 
   app.innerHTML = `
     <div class="header">
@@ -237,7 +262,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
           </label>
         </li>`).join('')}
     </ul>
-    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['*a','select all'],['*n','deselect all'],['d','close checked'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['d','close tab / close checked'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -271,7 +296,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
   let chordTimer = null;
   function clearChord() { pendingChord = null; clearTimeout(chordTimer); chordTimer = null; }
 
-  setKeyHandler(e => {
+  setKeyHandler(async e => {
     if (pendingChord === '*') {
       clearChord();
       if (e.key === 'a') {
@@ -283,7 +308,6 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
         e.preventDefault();
         app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
         updateCloseButton();
-        app.querySelector('#close-btn')?.focus();
         return;
       }
     }
@@ -315,12 +339,27 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
       else { navItems[(effectiveCur - 1 + navItems.length) % navItems.length]?.focus(); }
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
+    } else if (e.key === 'o' && document.activeElement?.type === 'checkbox') {
+      e.preventDefault();
+      try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
+      window.close();
     } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       backFn();
     } else if (e.key === 'd') {
       e.preventDefault();
-      app.querySelector('#close-btn:not(:disabled)')?.click();
+      if (document.activeElement?.type === 'checkbox') {
+        const tabId = parseInt(document.activeElement.dataset.tabId);
+        const idx = checkboxes.indexOf(document.activeElement);
+        try { await chrome.tabs.remove(tabId); } catch {}
+        document.activeElement.closest('.check-item')?.remove();
+        const remaining = [...app.querySelectorAll('input[type=checkbox]')];
+        if (!remaining.length) { backFn(); return; }
+        (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
+        updateCloseButton();
+      } else {
+        app.querySelector('#close-btn:not(:disabled)')?.click();
+      }
     } else if (e.key === '?') {
       e.preventDefault();
       toggleHints(app);
@@ -331,7 +370,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
 }
 
 function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
-  const allGroupTabs = (group.strategy === 'recency' || group.strategy === 'newtab' || group.strategy === 'peer') ? group.tabs : [activeTab, ...group.tabs];
+  const allGroupTabs = (['recency', 'newtab', 'peer', 'other'].includes(group.strategy)) ? group.tabs : [activeTab, ...group.tabs];
   const savedIds = checkState.get(stateKey);
 
   app.innerHTML = `
@@ -362,7 +401,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['*a','select all'],['*n','deselect all'],['d','close checked'],['D','keep current'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['d','close tab / close checked'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -415,7 +454,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
     chordTimer = null;
   }
 
-  setKeyHandler(e => {
+  setKeyHandler(async e => {
     if (pendingChord === '*') {
       clearChord();
       if (e.key === 'a') {
@@ -427,7 +466,6 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
         e.preventDefault();
         app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
         updateCloseButton();
-        app.querySelectorAll('input[type=checkbox]')[0]?.focus();
         return;
       }
     }
@@ -465,13 +503,28 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
       app.querySelector('.hints-btn')?.focus();
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
+    } else if (e.key === 'o' && document.activeElement?.type === 'checkbox') {
+      e.preventDefault();
+      try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
+      window.close();
     } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       checkState.set(stateKey, new Set(checkedIds(app)));
       backFn();
     } else if (e.key === 'd') {
       e.preventDefault();
-      app.querySelector('#close-btn:not(:disabled)')?.click();
+      if (document.activeElement?.type === 'checkbox') {
+        const tabId = parseInt(document.activeElement.dataset.tabId);
+        const idx = checkboxes.indexOf(document.activeElement);
+        try { await chrome.tabs.remove(tabId); } catch {}
+        document.activeElement.closest('.check-item')?.remove();
+        const remaining = [...app.querySelectorAll('input[type=checkbox]')];
+        if (!remaining.length) { checkState.set(stateKey, new Set()); backFn(); return; }
+        (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
+        updateCloseButton();
+      } else {
+        app.querySelector('#close-btn:not(:disabled)')?.click();
+      }
     } else if (e.key === 'D') {
       e.preventDefault();
       const keepBtn = app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn');

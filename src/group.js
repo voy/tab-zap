@@ -7,6 +7,14 @@ const MIN_GROUP_SIZE = 2;
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
+export function generateOtherGroup(allTabs, excludeTabIds) {
+  const tabs = allTabs
+    .filter(t => !t.pinned && !excludeTabIds.has(t.id))
+    .sort((a, b) => (a.lastAccessed ?? 0) - (b.lastAccessed ?? 0));
+  if (!tabs.length) return null;
+  return { label: 'other tabs', strategy: 'other', tabs };
+}
+
 export function generateTopGroups(allTabs, excludeTabIds) {
   const byHostname = new Map();
   for (const t of allTabs) {
