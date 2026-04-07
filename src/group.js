@@ -7,6 +7,34 @@ const MIN_GROUP_SIZE = 2;
  * @param {chrome.tabs.Tab[]} allTabs
  * @returns {{ label: string, strategy: string, tabs: chrome.tabs.Tab[] }[]}
  */
+/**
+ * @param {chrome.tabs.Tab[]} allTabs
+ * @param {{ id: string, name: string, domains: string[] }[]} customGroupDefs
+ * @param {number|null} activeTabId
+ * @returns {{ label: string, strategy: string, defId: string, tabs: chrome.tabs.Tab[] }[]}
+ */
+export function generateCustomGroups(allTabs, customGroupDefs) {
+  if (!customGroupDefs.length) return [];
+  const parsedMap = new Map();
+  for (const t of allTabs) {
+    if (t.pinned) continue;
+    const p = parseUrl(t.url);
+    if (p) parsedMap.set(t.id, p);
+  }
+  return customGroupDefs
+    .map(def => {
+      const tabs = allTabs.filter(t => {
+        const p = parsedMap.get(t.id);
+        if (!p) return false;
+        return def.domains.some(pattern =>
+          pattern.startsWith('*.') ? p.registeredDomain === pattern.slice(2) : p.hostname === pattern
+        );
+      });
+      return { label: def.name, strategy: 'custom', defId: def.id, domains: def.domains, tabs };
+    })
+    .filter(g => g.tabs.length > 0);
+}
+
 export function generateTopGroups(allTabs, excludeTabIds) {
   const byHostname = new Map();
   for (const t of allTabs) {

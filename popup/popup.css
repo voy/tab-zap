@@ -93,13 +93,16 @@ body {
 .group-section-heading {
   list-style: none;
   padding: 10px 10px 3px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #aaa;
+  color: #bbb;
   pointer-events: none;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .group-divider {
@@ -150,6 +153,8 @@ body {
   color: #aaa;
   margin-right: 8px;
   flex-shrink: 0;
+  min-width: 28px;
+  text-align: right;
 }
 
 .group-count {
@@ -371,6 +376,235 @@ body {
   padding-top: 6px;
 }
 
+/* ── Manage pill button ── */
+
+.manage-btn {
+  pointer-events: all;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #bbb;
+  cursor: pointer;
+  padding: 1px 7px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.manage-btn:hover {
+  border-color: #bbb;
+  color: #888;
+}
+
+.manage-btn:focus {
+  outline: none;
+  border-color: #999;
+  color: #666;
+}
+
+/* ── Dormant group items ── */
+
+.group-item--dormant .group-label,
+.group-item--dormant .group-count {
+  color: #bbb;
+}
+
+
+/* ── Inline naming ── */
+
+.group-item .group-name-input {
+  flex: 1;
+  border: none;
+  outline: 2px solid #555;
+  outline-offset: -2px;
+  border-radius: 3px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  height: 26px;
+  background: #f8f8f8;
+  min-width: 0;
+}
+
+.naming-hint {
+  font-family: monospace;
+  font-size: 11px;
+  color: #bbb;
+  flex-shrink: 0;
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* ── Inline absorb picker ── */
+
+.absorb-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #aaa;
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
+.absorb-list {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.absorb-item {
+  padding: 2px 9px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.absorb-item:hover,
+.absorb-item:focus {
+  background: #f0f0f0;
+  border-color: #999;
+  outline: none;
+}
+
+/* ── Absorb confirmation ── */
+
+.absorb-confirm {
+  font-size: 12px;
+  color: #888;
+  flex: 1;
+  text-align: center;
+}
+
+/* ── Inline edit state ── */
+
+.group-item--editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px 14px 10px 22px;
+  cursor: default;
+  background: #f9f9f9;
+}
+
+.group-item--editing:focus-within {
+  background: #f9f9f9;
+}
+
+.edit-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.edit-name-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: #1a1a1a;
+  padding: 0;
+  outline: none;
+  border-bottom: 1px solid #ddd;
+  margin: 0 8px;
+}
+
+.edit-name-input:focus {
+  border-bottom-color: #555;
+}
+
+.edit-domains-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding-left: 28px;
+}
+
+.domain-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 8px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-family: monospace;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.domain-chip:hover,
+.domain-chip:focus {
+  border-color: #999;
+  background: #f0f0f0;
+  outline: none;
+}
+
+.chip-x {
+  font-size: 13px;
+  color: #bbb;
+  line-height: 1;
+}
+
+.domain-chip:hover .chip-x,
+.domain-chip:focus .chip-x {
+  color: #777;
+}
+
+.edit-add-input {
+  border: none;
+  background: none;
+  font: inherit;
+  font-family: monospace;
+  font-size: 11px;
+  color: #555;
+  padding: 1px 4px;
+  width: 70px;
+  outline: none;
+  border-bottom: 1px solid transparent;
+}
+
+.edit-add-input:focus {
+  border-bottom-color: #bbb;
+}
+
+.edit-add-input::placeholder {
+  color: #ccc;
+}
+
+.edit-delete-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 11px;
+  color: #ccc;
+  cursor: pointer;
+  padding: 1px 4px;
+}
+
+.edit-delete-btn:hover {
+  color: #c44;
+}
+
 /* ── Dark mode ── */
 
 @media (prefers-color-scheme: dark) {
@@ -538,5 +772,93 @@ body {
   .key-hint-label {
     color: #888;
   }
+
+  .group-item--dormant .group-label,
+  .group-item--dormant .group-count {
+    color: #555;
+  }
+
+  .manage-btn {
+    border-color: #3a3a3c;
+    color: #555;
+  }
+
+  .manage-btn:hover {
+    border-color: #666;
+    color: #aaa;
+  }
+
+  .manage-btn:focus {
+    border-color: #888;
+    color: #bbb;
+  }
+
+  .group-item .group-name-input {
+    background: #2c2c2e;
+    color: #f0f0f0;
+    outline-color: #aaa;
+  }
+
+  .naming-hint { color: #555; }
+
+  .absorb-label { color: #555; }
+
+  .absorb-item {
+    border-color: #3a3a3c;
+    color: #f0f0f0;
+  }
+
+  .absorb-item:hover,
+  .absorb-item:focus {
+    background: #3a3a3c;
+    border-color: #888;
+  }
+
+  .group-item--editing {
+    background: #232325;
+  }
+
+  .group-item--editing:focus-within {
+    background: #232325;
+  }
+
+  .edit-name-input {
+    color: #f0f0f0;
+    border-bottom-color: #3a3a3c;
+  }
+
+  .edit-name-input:focus {
+    border-bottom-color: #aaa;
+  }
+
+  .domain-chip {
+    border-color: #3a3a3c;
+    background: #2c2c2e;
+    color: #ccc;
+  }
+
+  .domain-chip:hover,
+  .domain-chip:focus {
+    background: #3a3a3c;
+    border-color: #666;
+  }
+
+  .chip-x { color: #555; }
+
+  .domain-chip:hover .chip-x,
+  .domain-chip:focus .chip-x { color: #aaa; }
+
+  .edit-add-input {
+    color: #ccc;
+  }
+
+  .edit-add-input:focus {
+    border-bottom-color: #555;
+  }
+
+  .edit-add-input::placeholder { color: #444; }
+
+  .edit-delete-btn { color: #444; }
+  .edit-delete-btn:hover { color: #e06060; }
 }
 
