@@ -262,7 +262,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
           </label>
         </li>`).join('')}
     </ul>
-    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['d','close tab / close checked'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['dd/⌫','close tab'],['d','close checked'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -311,6 +311,14 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
         return;
       }
     }
+    if (pendingChord === 'd') {
+      clearChord();
+      if (e.key === 'd' && document.activeElement?.type === 'checkbox') {
+        e.preventDefault();
+        await closeTab(document.activeElement, app, checkboxes, backFn, updateCloseButton);
+        return;
+      }
+    }
     if (e.key === '*') {
       e.preventDefault();
       clearChord();
@@ -346,17 +354,15 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
     } else if (e.key === 'Escape' || e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       backFn();
-    } else if (e.key === 'd') {
+    } else if ((e.key === 'Backspace' || e.key === 'Delete') && document.activeElement?.type === 'checkbox') {
       e.preventDefault();
-      if (document.activeElement?.type === 'checkbox') {
-        const tabId = parseInt(document.activeElement.dataset.tabId);
-        const idx = checkboxes.indexOf(document.activeElement);
-        try { await chrome.tabs.remove(tabId); } catch {}
-        document.activeElement.closest('.check-item')?.remove();
-        const remaining = [...app.querySelectorAll('input[type=checkbox]')];
-        if (!remaining.length) { backFn(); return; }
-        (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
-        updateCloseButton();
+      await closeTab(document.activeElement, app, checkboxes, backFn, updateCloseButton);
+    } else if (e.key === 'd' || e.key === 'D') {
+      e.preventDefault();
+      if (e.key === 'd' && document.activeElement?.type === 'checkbox') {
+        clearChord();
+        pendingChord = 'd';
+        chordTimer = setTimeout(clearChord, 1500);
       } else {
         app.querySelector('#close-btn:not(:disabled)')?.click();
       }
@@ -401,7 +407,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
         </li>`;
       }).join('')}
     </ul>
-    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['d','close tab / close checked'],['D','keep current'],['q','quit']])}
+    ${keyHints([['j/k/↑/↓','navigate'],['h/←','back'],['x','toggle'],['o','open tab'],['*a','select all'],['*n','deselect all'],['dd/⌫','close tab'],['d','close checked'],['D','keep current'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -511,28 +517,25 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
       e.preventDefault();
       checkState.set(stateKey, new Set(checkedIds(app)));
       backFn();
-    } else if (e.key === 'd') {
+    } else if ((e.key === 'Backspace' || e.key === 'Delete') && document.activeElement?.type === 'checkbox') {
       e.preventDefault();
-      if (document.activeElement?.type === 'checkbox') {
-        const tabId = parseInt(document.activeElement.dataset.tabId);
-        const idx = checkboxes.indexOf(document.activeElement);
-        try { await chrome.tabs.remove(tabId); } catch {}
-        document.activeElement.closest('.check-item')?.remove();
-        const remaining = [...app.querySelectorAll('input[type=checkbox]')];
-        if (!remaining.length) { checkState.set(stateKey, new Set()); backFn(); return; }
-        (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
-        updateCloseButton();
+      await closeTab(document.activeElement, app, checkboxes, backFn, updateCloseButton);
+    } else if (e.key === 'd' || e.key === 'D') {
+      e.preventDefault();
+      if (e.key === 'd' && document.activeElement?.type === 'checkbox') {
+        clearChord();
+        pendingChord = 'd';
+        chordTimer = setTimeout(clearChord, 1500);
+      } else if (e.key === 'D') {
+        const keepBtn = app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn');
+        if (keepBtn) {
+          keepBtn.click();
+        } else {
+          checkState.set(stateKey, new Set(checkedIds(app)));
+          backFn();
+        }
       } else {
         app.querySelector('#close-btn:not(:disabled)')?.click();
-      }
-    } else if (e.key === 'D') {
-      e.preventDefault();
-      const keepBtn = app.querySelector('#keep-current-btn:not(:disabled)') ?? app.querySelector('#close-one-btn');
-      if (keepBtn) {
-        keepBtn.click();
-      } else {
-        checkState.set(stateKey, new Set(checkedIds(app)));
-        backFn();
       }
     } else if (e.key === '?') {
       e.preventDefault();
@@ -541,6 +544,17 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
       window.close();
     }
   });
+}
+
+async function closeTab(cb, app, checkboxes, backFn, updateCloseButton) {
+  const tabId = parseInt(cb.dataset.tabId);
+  const idx = checkboxes.indexOf(cb);
+  try { await chrome.tabs.remove(tabId); } catch {}
+  cb.closest('.check-item')?.remove();
+  const remaining = [...app.querySelectorAll('input[type=checkbox]')];
+  if (!remaining.length) { init(); return; }
+  (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
+  updateCloseButton();
 }
 
 let activeKeyHandler = null;
