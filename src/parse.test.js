@@ -87,3 +87,23 @@ test('path segments are empty for root path', () => {
   const r = parseUrl('https://example.com/');
   assert.deepEqual(r.pathSegments, []);
 });
+
+// ── file:// URLs ──────────────────────────────────────────────────────────────
+
+test('file:// URL returns path as hostname', () => {
+  const r = parseUrl('file:///Users/foo/index.html');
+  assert.equal(r.hostname, '/Users/foo/index.html');
+  assert.equal(r.registeredDomain, '/Users/foo/index.html');
+});
+
+test('different file paths produce different hostnames', () => {
+  const a = parseUrl('file:///Users/foo/a.html');
+  const b = parseUrl('file:///Users/foo/b.html');
+  assert.notEqual(a.hostname, b.hostname);
+});
+
+test('same file path produces same hostname', () => {
+  const a = parseUrl('file:///Users/foo/index.html');
+  const b = parseUrl('file:///Users/foo/index.html');
+  assert.equal(a.hostname, b.hostname);
+});

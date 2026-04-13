@@ -489,6 +489,11 @@ function renderLabel(label) {
   if (label.startsWith('*.')) {
     return `<span class="label-wildcard">*.</span>${esc(label.slice(2))}`;
   }
+  if (label.startsWith('/')) {
+    const parts = label.split('/').filter(Boolean);
+    const short = parts.length > 1 ? `\u2026/${parts.slice(-2).join('/')}` : label;
+    return `<span title="${esc(label)}">${esc(short)}</span>`;
+  }
   return esc(label);
 }
 

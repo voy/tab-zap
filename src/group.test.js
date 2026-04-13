@@ -186,11 +186,16 @@ test('tabs on different ports do not form a cross-port domain group', () => {
 
 // ── unparsable active tab ─────────────────────────────────────────────────────
 
-test('returns empty groups for file:// active tab URL', () => {
+test('file:// active tab forms a hostname group using the file path', () => {
   const active = { id: 1, url: 'file:///Users/foo/doc.html', title: 'Doc', pinned: false, lastAccessed: NOW };
-  const others = [tab(2, 'https://github.com/'), tab(3, 'https://github.com/foo')];
-  const groups = generateGroups(active, [active, ...others]);
-  assert.equal(groups.length, 0);
+  const sameFile = { id: 2, url: 'file:///Users/foo/doc.html', title: 'Doc', pinned: false, lastAccessed: NOW };
+  const otherFile = { id: 3, url: 'file:///Users/foo/other.html', title: 'Other', pinned: false, lastAccessed: NOW };
+  const http = tab(4, 'https://github.com/');
+  const groups = generateGroups(active, [active, sameFile, otherFile, http]);
+  const hostGroup = groups.find(g => g.strategy === 'hostname');
+  assert.ok(hostGroup, 'hostname group should exist for file:// active tab');
+  assert.equal(hostGroup.tabs.length, 1);
+  assert.equal(hostGroup.tabs[0].id, 2); // only the tab at the same path
 });
 
 // ── chrome:// grouping ────────────────────────────────────────────────────────

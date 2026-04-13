@@ -7,6 +7,12 @@ import { parse as parseTld } from 'tldts';
 export function parseUrl(urlString) {
   try {
     const url = new URL(urlString);
+
+    if (url.protocol === 'file:') {
+      const path = url.pathname;
+      return { hostname: path, registeredDomain: path, pathSegments: path.split('/').filter(Boolean) };
+    }
+
     const host = url.hostname.toLowerCase();
     if (!host) return null;
 
