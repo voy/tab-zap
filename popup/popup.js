@@ -1,5 +1,6 @@
 import { generateGroups, generateTopGroups, generateOtherGroup } from '../src/group.js';
 import { parseUrl } from '../src/parse.js';
+import { esc, trunc, formatShortcut, tabCount, renderLabel } from '../src/utils.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
@@ -98,13 +99,8 @@ function attachHintsToggle(app) {
   app.querySelector('.hints-btn')?.addEventListener('click', () => toggleHints(app));
 }
 
-function tabCount(g) {
-  return (['peer', 'top', 'other'].includes(g.strategy))
-    ? g.tabs.length
-    : g.tabs.length + 1;
-}
 
-function renderGroupList(app, activeTab, groups, checkState, topGroups = [], otherGroup = null, focusTopIndex = null, focusIndex = null) {
+function renderGroupList(app, activeTab, groups, checkState, topGroups = [], otherGroup = null, focusTopIndex = null, focusIndex = null, focusOther = false) {
   app.innerHTML = `
     <div class="header">
       <div class="header-row">
@@ -150,7 +146,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
       if (el.dataset.other === 'true') {
         renderChecklist(
           app, activeTab, otherGroup,
-          () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup),
+          () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, null, null, true),
           checkState, 'other'
         );
       } else if (el.dataset.big === 'true') {
@@ -168,11 +164,13 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
     el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.click(); } });
   });
 
-  (focusTopIndex !== null
-    ? app.querySelector(`[data-top-index="${focusTopIndex}"]`)
-    : focusIndex !== null
-      ? app.querySelector(`[data-index="${focusIndex}"]`)
-      : app.querySelector('.group-item')
+  (focusOther
+    ? app.querySelector('[data-other="true"]')
+    : focusTopIndex !== null
+      ? app.querySelector(`[data-top-index="${focusTopIndex}"]`)
+      : focusIndex !== null
+        ? app.querySelector(`[data-index="${focusIndex}"]`)
+        : app.querySelector('.group-item')
   )?.focus();
 
   setKeyHandler(e => {
@@ -251,7 +249,7 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
       ${bigGroup.tabs.map(t => `
         <li class="check-item">
           <label>
-            <input type="checkbox" data-tab-id="${t.id}">
+            <input type="checkbox" checked data-tab-id="${t.id}">
             ${t.favIconUrl ? `<img class="favicon" src="${esc(t.favIconUrl)}" alt="">` : '<span class="favicon-placeholder"></span>'}
             <span title="${esc(t.url || '')}">${esc(trunc(t.title, 38))}</span>
           </label>
@@ -485,38 +483,5 @@ function checkedIds(app) {
 }
 
 
-function renderLabel(label) {
-  if (label.startsWith('*.')) {
-    return `<span class="label-wildcard">*.</span>${esc(label.slice(2))}`;
-  }
-  if (label.startsWith('/')) {
-    const parts = label.split('/').filter(Boolean);
-    const short = parts.length > 1 ? `\u2026/${parts.slice(-2).join('/')}` : label;
-    return `<span title="${esc(label)}">${esc(short)}</span>`;
-  }
-  return esc(label);
-}
-
-function esc(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-
-function formatShortcut(shortcut) {
-  return shortcut
-    .replace('Command+', '⌘')
-    .replace('Ctrl+', '⌃')
-    .replace('Alt+', '⌥')
-    .replace('Shift+', '⇧');
-}
-
-function trunc(str, len) {
-  if (!str) return '';
-  return str.length > len ? str.slice(0, len) + '…' : str;
-}
 
 init();
