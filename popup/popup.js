@@ -296,19 +296,19 @@ function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, 
     const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
     const cur = checkboxes.indexOf(document.activeElement);
 
-    if (e.key === 'j') {
+    if (e.key === 'j' || e.key === 'ArrowDown') {
       e.preventDefault();
       checkboxes[(cur + 1) % checkboxes.length]?.focus();
-    } else if (e.key === 'k') {
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
       e.preventDefault();
       checkboxes[(cur - 1 + checkboxes.length) % checkboxes.length]?.focus();
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
-    } else if ((e.key === 'l' || e.key === 'o') && document.activeElement?.type === 'checkbox') {
+    } else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight') && document.activeElement?.type === 'checkbox') {
       e.preventDefault();
       try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
       window.close();
-    } else if (e.key === 'h') {
+    } else if (e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       backFn();
     } else if (e.key === 'Escape') {
@@ -351,7 +351,7 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
     <ul class="checklist">
       ${allGroupTabs.map(t => {
         const isCurrent = t.id === activeTab.id;
-        const checked = savedIds ? savedIds.has(t.id) : true;
+        const checked = savedIds ? savedIds.has(t.id) : stateKey !== 'other';
         return `
         <li class="check-item">
           <label>
@@ -408,19 +408,19 @@ function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
     const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
     const cur = checkboxes.indexOf(document.activeElement);
 
-    if (e.key === 'j') {
+    if (e.key === 'j' || e.key === 'ArrowDown') {
       e.preventDefault();
       checkboxes[(cur + 1) % checkboxes.length]?.focus();
-    } else if (e.key === 'k') {
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
       e.preventDefault();
       checkboxes[(cur - 1 + checkboxes.length) % checkboxes.length]?.focus();
     } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
       document.activeElement.click();
-    } else if ((e.key === 'l' || e.key === 'o') && document.activeElement?.type === 'checkbox') {
+    } else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight') && document.activeElement?.type === 'checkbox') {
       e.preventDefault();
       try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
       window.close();
-    } else if (e.key === 'h') {
+    } else if (e.key === 'h' || e.key === 'ArrowLeft') {
       e.preventDefault();
       checkState.set(stateKey, new Set(checkedIds(app)));
       backFn();
