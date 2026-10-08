@@ -3,6 +3,8 @@ import { esc, trunc, formatShortcut, tabCount, renderLabel } from '../src/utils.
 import { createSearch } from './search.js';
 import { showChecklist } from './checklist.js';
 
+const SEARCH_ONLY = true;
+
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
   peer:     { text: 'peer', tip: 'All tabs on this hostname' },
@@ -24,6 +26,7 @@ async function init() {
     } else {
       hintsVisible = stored.hintsVisible ?? false;
     }
+    if (SEARCH_ONLY) return search.open(() => window.close());
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab) return;
 

@@ -18,8 +18,12 @@ At the bottom, a **top groups** section shows the three largest tab clusters acr
 
 ## Natural-language search with Jev
 
+The popup currently opens directly into search. Domain grouping is temporarily
+disabled with `SEARCH_ONLY` in `popup/popup.js`; set it to `false` to restore groups.
+Escape from the query closes the popup; returning from results reopens the query.
+
 Press `/` and describe the tabs you want to close. Search starts after a
-650 ms typing pause; Enter searches immediately. Automatic searches need
+450 ms typing pause; Enter searches immediately. Automatic searches need
 at least two characters. Opening the query editor does not issue a request.
 Only one search runs at a time; edits during a request wait for it to finish
 and for the typing pause. Stale results are ignored, and unchanged queries

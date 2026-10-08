@@ -135,7 +135,7 @@ export function createSearch({ app, home, setKeyHandler, showResults, showPrevie
         return;
       }
       if (value === lastSubmitted) return;
-      timer = setTimeout(() => { due = true; run(); }, 650);
+      timer = setTimeout(() => { due = true; run(); }, 450);
     }
     input.addEventListener('input', schedule);
     input.addEventListener('compositionstart', () => { composing = true; clearTimeout(timer); due = false; });

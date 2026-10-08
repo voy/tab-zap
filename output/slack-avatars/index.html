@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miro × Spoons — Slack avatar concepts</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f3ed;color:#24221e;font:15px system-ui,-apple-system,sans-serif}main{max-width:1160px;margin:auto;padding:36px 28px}header{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:28px}h1{font-size:30px;letter-spacing:-1px;margin:0 0 8px}p{margin:0;color:#777269}.eyebrow{font-size:11px;letter-spacing:2px;font-weight:700;margin-bottom:10px}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.controls label{font-size:12px;margin-right:4px}button{border:1px solid #d8d3c8;background:transparent;padding:8px 12px;border-radius:8px;font:inherit;font-size:12px;cursor:pointer}button[aria-pressed=true]{background:#302b35;color:white;border-color:#302b35}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.card{background:#fffdf7;border:1px solid #e6e0d6;border-radius:16px;overflow:hidden}.display{display:grid;grid-template-columns:1fr 84px;min-height:220px}.large{display:flex;align-items:center;justify-content:center;padding:24px}.large img{width:168px;height:168px;border-radius:24px}.rail{background:#350c3e;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;padding:20px 10px}.rail img,.placeholder{width:var(--size,48px);height:var(--size,48px);border-radius:24%;object-fit:cover}.placeholder{display:grid;place-items:center;background:#e8e4e8;color:#503c54;font-size:20px;font-weight:600}.grave{background:#454546;color:white;font-size:12px}.selected{outline:2px solid white;outline-offset:2px;position:relative;border-radius:24%;display:flex}.badge{position:absolute;right:-8px;top:-10px;background:#cca0d8;border-radius:16px;padding:2px 6px;font-size:12px;font-weight:700;color:#300839}.info{padding:18px 20px;border-top:1px solid #eae5db}h2{font-size:16px;margin:0 0 6px}.number{color:#9b958a;font-size:12px;margin-right:7px}.description{font-size:13px;line-height:1.5;min-height:39px}.sizes{display:flex;align-items:end;gap:24px;margin:18px 0}.sample{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:10px;color:#8c8579}.sample img{border-radius:24%}a{font-size:12px;color:#52415a;text-underline-offset:3px}.footer{font-size:12px;margin-top:24px;color:#857d70}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:580px){main{padding:24px 16px}header{align-items:start;flex-direction:column}.grid{grid-template-columns:1fr}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="eyebrow">MIRO × BENDING SPOONS</div><h1>A small icon. A dark joke.</h1><p>Six concepts, tested at Slack sidebar size.</p></div><div class="controls" aria-label="Sidebar preview size"><label>Sidebar size</label><button type="button" data-size="32" aria-pressed="false">32 px</button><button type="button" data-size="48" aria-pressed="true">48 px</button><button type="button" data-size="64" aria-pressed="false">64 px</button></div></header>
+<div class="grid" id="concepts"></div>
+<p class="footer">Artwork uses Miro yellow and simplified marks. Sidebar previews reproduce the purple context of your reference.</p>
+</main>
+<script>
+const concepts=[
+['01-spoon-grave','Spoon grave marker','Yellow headstone, Miro mark, crossed spoons.'],
+['02-spoon-headstone','Bent-spoon headstone','Two spoons form the headstone itself.'],
+['03-rip-sticky','RIP sticky note','A sticky-note grave with a spoon for a shovel.'],
+['04-coat-of-arms','Corporate coat of arms','Headstone shield with crossed spoons behind it.'],
+['05-spoon-monument','Spoon monument','A bent spoon arches over Miro’s grave.'],
+['06-sticky-spoon','Sticky note + spoon','One yellow note. One black bent spoon.']
+];
+document.getElementById('concepts').innerHTML=concepts.map(([id,name,desc],i)=>`<article class="card"><div class="display"><div class="large"><img src="${id}.png" alt="${name}"></div><div class="rail" aria-label="Slack sidebar preview"><div class="placeholder grave" aria-hidden="true">RIP</div><div class="selected"><img src="${id}.png" alt="${name} at sidebar size"><span class="badge" aria-hidden="true">24</span></div><div class="placeholder" aria-hidden="true">B</div></div></div><div class="info"><h2><span class="number">0${i+1}</span>${name}</h2><p class="description">${desc}</p><div class="sizes">${[32,48,64].map(s=>`<div class="sample"><img src="${id}.png" width="${s}" height="${s}" alt="${name}, ${s} pixels"><span>${s} px</span></div>`).join('')}</div><a href="${id}.png" download="${id}.png">Download PNG ↗</a></div></article>`).join('');
+document.querySelectorAll('[data-size]').forEach(button=>button.addEventListener('click',()=>{document.documentElement.style.setProperty('--size',button.dataset.size+'px');document.querySelectorAll('[data-size]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)))}));
+</script>
+</body>
+</html>
