@@ -1,6 +1,7 @@
 import { generateGroups, generateTopGroups, generateOtherGroup } from '../src/group.js';
-import { parseUrl } from '../src/parse.js';
 import { esc, trunc, formatShortcut, tabCount, renderLabel } from '../src/utils.js';
+import { createSearch } from './search.js';
+import { showChecklist } from './checklist.js';
 
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
@@ -54,7 +55,7 @@ function renderEmpty(app, activeTab) {
     <div class="header">
       <div class="header-row">
         <div class="app-title">Current Tab</div>
-        ${shortcutHint ? `<kbd class="shortcut-hint">${esc(shortcutHint)}</kbd>` : ''}
+        <button class="hints-btn" title="Keyboard shortcuts">?</button>
       </div>
       <div class="current-tab">${esc(trunc(activeTab.title, 42))}</div>
     </div>
@@ -65,7 +66,9 @@ function renderEmpty(app, activeTab) {
            <div class="empty">No similar tabs found.</div>`
       }
     </div>
+    ${keyHints([['/','search'],[',','settings'],['q/esc','quit']])}
   `;
+  attachHintsToggle(app);
 
   if (!isPinned) {
     app.querySelector('#close-btn').addEventListener('click', async () => {
@@ -77,6 +80,8 @@ function renderEmpty(app, activeTab) {
 
   setKeyHandler(e => {
     if (e.key === 'Escape') window.close();
+    else if (e.key === 'q') window.close();
+    else if (e.key === '?') toggleHints(app);
   });
 }
 
@@ -137,7 +142,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
         </li>
       ` : ''}
     </ul>
-    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/o/→/↵/spc','open'],['d','close all'],['D','keep current'],['q','quit']])}
+    ${keyHints([...(shortcutHint ? [[shortcutHint, 'open popup']] : []), ['j/k/↑/↓','navigate'],['l/o/→/↵/spc','open'],['d','close all'],['D','keep current'],['/','search'],[',','settings'],['q','quit']])}
   `;
 
   attachHintsToggle(app);
@@ -161,7 +166,6 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
         );
       }
     });
-    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.click(); } });
   });
 
   (focusOther
@@ -178,7 +182,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
     const cur = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); items[(cur + 1) % items.length]?.focus(); }
     else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); items[(cur - 1 + items.length) % items.length]?.focus(); }
-    else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight' || e.key === ' ') && cur !== -1) { e.preventDefault(); items[cur].click(); }
+    else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') && cur !== -1) { e.preventDefault(); items[cur].click(); }
     else if (e.key === '?') { e.preventDefault(); toggleHints(app); }
     else if (e.key === 'Escape' || e.key === 'q') window.close();
     else if ((e.key === 'd' || e.key === 'D') && cur !== -1) {
@@ -233,255 +237,49 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
         }
       }
     }
+  }, () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, focusTopIndex, focusIndex, focusOther));
+}
+
+function renderTopChecklist(app, activeTab, group, topI, groups, checkState, topGroups, otherGroup = null) {
+  showChecklist({
+    app, title: group.label, tabs: group.tabs, activeTab, checkState, stateKey: `top-${topI}`,
+    back: () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, topI),
+    refresh: init, setKeyHandler, keyHints, attachHintsToggle,
   });
 }
 
-function renderTopChecklist(app, activeTab, bigGroup, topI, groups, checkState, topGroups, otherGroup = null) {
-  const backFn = () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, topI);
-
-  app.innerHTML = `
-    <div class="header">
-      <div class="header-row">
-        <div class="current-tab">${esc(bigGroup.label)}</div>
-      </div>
-    </div>
-    <ul class="checklist">
-      ${bigGroup.tabs.map(t => `
-        <li class="check-item">
-          <label>
-            <input type="checkbox" checked data-tab-id="${t.id}">
-            ${t.favIconUrl ? `<img class="favicon" src="${esc(t.favIconUrl)}" alt="">` : '<span class="favicon-placeholder"></span>'}
-            <span title="${esc(t.url || '')}">${esc(trunc(t.title, 38))}</span>
-          </label>
-        </li>`).join('')}
-    </ul>
-    ${keyHints([['j/k','navigate'],['spc/x','toggle'],['l/o','open tab'],['*a/*n','all/none'],['e','close tab'],['d','close checked'],['h/esc','back'],['q','quit']])}
-  `;
-
-  applyHintsVisibility(app);
-
-  app.querySelectorAll('img.favicon').forEach(img => {
-    img.addEventListener('error', () => { img.style.display = 'none'; });
+function renderChecklist(app, activeTab, group, back, checkState, stateKey) {
+  const tabs = ['hostname', 'domain'].includes(group.strategy) && !activeTab.pinned
+    ? [activeTab, ...group.tabs] : group.tabs;
+  showChecklist({
+    app, title: group.label, tabs, activeTab, back, checkState, stateKey,
+    defaultChecked: stateKey !== 'other', refresh: init, setKeyHandler, keyHints, attachHintsToggle,
   });
-
-  app.querySelectorAll('input[type=checkbox]')[0]?.focus();
-
-  let pendingChord = null;
-  let chordTimer = null;
-  function clearChord() { pendingChord = null; clearTimeout(chordTimer); chordTimer = null; }
-
-  setKeyHandler(async e => {
-    if (pendingChord === '*') {
-      clearChord();
-      if (e.key === 'a') {
-        e.preventDefault();
-        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = true; });
-        return;
-      } else if (e.key === 'n') {
-        e.preventDefault();
-        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
-        return;
-      }
-    }
-    if (e.key === '*') {
-      e.preventDefault();
-      clearChord();
-      pendingChord = '*';
-      chordTimer = setTimeout(clearChord, 1500);
-      return;
-    }
-
-    const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
-    const cur = checkboxes.indexOf(document.activeElement);
-
-    if (e.key === 'j' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      checkboxes[(cur + 1) % checkboxes.length]?.focus();
-    } else if (e.key === 'k' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      checkboxes[(cur - 1 + checkboxes.length) % checkboxes.length]?.focus();
-    } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
-      document.activeElement.click();
-    } else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight') && document.activeElement?.type === 'checkbox') {
-      e.preventDefault();
-      try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
-      window.close();
-    } else if (e.key === 'h' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      backFn();
-    } else if (e.key === 'Escape') {
-      window.close();
-    } else if (e.key === 'e' && document.activeElement?.type === 'checkbox') {
-      e.preventDefault();
-      await closeTab(document.activeElement, app, checkboxes, backFn);
-    } else if (e.key === 'd') {
-      e.preventDefault();
-      const toClose = checkedIds(app);
-      if (!toClose.length) return;
-      try { await chrome.tabs.remove(toClose); } catch {}
-      const toCloseSet = new Set(toClose);
-      app.querySelectorAll('input[type=checkbox]').forEach(cb => {
-        if (toCloseSet.has(parseInt(cb.dataset.tabId))) cb.closest('.check-item')?.remove();
-      });
-      const remaining = [...app.querySelectorAll('input[type=checkbox]')];
-      if (!remaining.length) { init(); return; }
-      remaining[0].focus();
-    } else if (e.key === '?') {
-      e.preventDefault();
-      toggleHints(app);
-    } else if (e.key === 'q') {
-      window.close();
-    }
-  });
-}
-
-function renderChecklist(app, activeTab, group, backFn, checkState, stateKey) {
-  const allGroupTabs = (['recency', 'newtab', 'peer', 'other'].includes(group.strategy)) ? group.tabs : [activeTab, ...group.tabs];
-  const hasActive = allGroupTabs.some(t => t.id === activeTab.id);
-  const savedIds = checkState.get(stateKey);
-
-  app.innerHTML = `
-    <div class="header">
-      <div class="header-row">
-        <div class="current-tab">${esc(group.label)}</div>
-      </div>
-    </div>
-    <ul class="checklist">
-      ${allGroupTabs.map(t => {
-        const isCurrent = t.id === activeTab.id;
-        const checked = savedIds ? savedIds.has(t.id) : stateKey !== 'other';
-        return `
-        <li class="check-item">
-          <label>
-            <input type="checkbox" ${checked ? 'checked' : ''} data-tab-id="${t.id}">
-            ${t.favIconUrl ? `<img class="favicon" src="${esc(t.favIconUrl)}" alt="">` : '<span class="favicon-placeholder"></span>'}
-            <span title="${esc(t.url || '')}">${esc(trunc(t.title, 38))}</span>
-            ${isCurrent ? '<span class="badge">current</span>' : ''}
-          </label>
-        </li>`;
-      }).join('')}
-    </ul>
-    ${keyHints([['j/k','navigate'],['spc/x','toggle'],['l/o','open tab'],['*a/*n','all/none'],['e','close tab'],['d','close checked'],['D','keep current'],['h/esc','back'],['q','quit']])}
-  `;
-
-  applyHintsVisibility(app);
-
-  app.querySelectorAll('img.favicon').forEach(img => {
-    img.addEventListener('error', () => { img.style.display = 'none'; });
-  });
-
-  app.querySelectorAll('input[type=checkbox]')[0]?.focus();
-
-  let pendingChord = null;
-  let chordTimer = null;
-
-  function clearChord() {
-    pendingChord = null;
-    clearTimeout(chordTimer);
-    chordTimer = null;
-  }
-
-  setKeyHandler(async e => {
-    if (pendingChord === '*') {
-      clearChord();
-      if (e.key === 'a') {
-        e.preventDefault();
-        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = true; });
-        return;
-      } else if (e.key === 'n') {
-        e.preventDefault();
-        app.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
-        return;
-      }
-    }
-
-    if (e.key === '*') {
-      e.preventDefault();
-      clearChord();
-      pendingChord = '*';
-      chordTimer = setTimeout(clearChord, 1500);
-      return;
-    }
-
-    const checkboxes = [...app.querySelectorAll('input[type=checkbox]')];
-    const cur = checkboxes.indexOf(document.activeElement);
-
-    if (e.key === 'j' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      checkboxes[(cur + 1) % checkboxes.length]?.focus();
-    } else if (e.key === 'k' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      checkboxes[(cur - 1 + checkboxes.length) % checkboxes.length]?.focus();
-    } else if ((e.key === 'Enter' || e.key === 'x') && document.activeElement?.type === 'checkbox') {
-      document.activeElement.click();
-    } else if ((e.key === 'l' || e.key === 'o' || e.key === 'ArrowRight') && document.activeElement?.type === 'checkbox') {
-      e.preventDefault();
-      try { await chrome.tabs.update(parseInt(document.activeElement.dataset.tabId), { active: true }); } catch {}
-      window.close();
-    } else if (e.key === 'h' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      checkState.set(stateKey, new Set(checkedIds(app)));
-      backFn();
-    } else if (e.key === 'Escape') {
-      window.close();
-    } else if (e.key === 'e' && document.activeElement?.type === 'checkbox') {
-      e.preventDefault();
-      await closeTab(document.activeElement, app, checkboxes, backFn);
-    } else if (e.key === 'd') {
-      e.preventDefault();
-      const toClose = checkedIds(app);
-      if (!toClose.length) return;
-      try { await chrome.tabs.remove(toClose); } catch {}
-      const toCloseSet = new Set(toClose);
-      app.querySelectorAll('input[type=checkbox]').forEach(cb => {
-        if (toCloseSet.has(parseInt(cb.dataset.tabId))) cb.closest('.check-item')?.remove();
-      });
-      const remaining = [...app.querySelectorAll('input[type=checkbox]')];
-      if (!remaining.length) { init(); return; }
-      remaining[0].focus();
-    } else if (e.key === 'D') {
-      e.preventDefault();
-      if (hasActive) {
-        const toClose = allGroupTabs.filter(t => t.id !== activeTab.id).map(t => t.id);
-        if (!toClose.length) return;
-        try { await chrome.tabs.remove(toClose); } catch {}
-        window.close();
-      } else {
-        try { await chrome.tabs.remove(activeTab.id); } catch {}
-        window.close();
-      }
-    } else if (e.key === '?') {
-      e.preventDefault();
-      toggleHints(app);
-    } else if (e.key === 'q') {
-      window.close();
-    }
-  });
-}
-
-async function closeTab(cb, app, checkboxes, backFn) {
-  const tabId = parseInt(cb.dataset.tabId);
-  const idx = checkboxes.indexOf(cb);
-  try { await chrome.tabs.remove(tabId); } catch {}
-  cb.closest('.check-item')?.remove();
-  const remaining = [...app.querySelectorAll('input[type=checkbox]')];
-  if (!remaining.length) { init(); return; }
-  (remaining[idx] ?? remaining[remaining.length - 1])?.focus();
 }
 
 let activeKeyHandler = null;
-function setKeyHandler(fn) {
+let resumeView = init;
+function setKeyHandler(fn, resume = init) {
+  resumeView = resume;
   if (activeKeyHandler) document.removeEventListener('keydown', activeKeyHandler);
-  activeKeyHandler = fn;
-  document.addEventListener('keydown', fn);
+  activeKeyHandler = e => {
+    if (document.getElementById('app').inert) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const typing = e.target instanceof HTMLInputElement && e.target.type !== 'checkbox';
+    if (typing && e.key !== 'Escape') return;
+    if (!typing && e.key === '/') { e.preventDefault(); search.open(resumeView); }
+    else if (!typing && e.key === ',') { e.preventDefault(); search.settings(resumeView); }
+    else fn(e);
+  };
+  document.addEventListener('keydown', activeKeyHandler);
 }
 
-function checkedIds(app) {
-  return [...app.querySelectorAll('input[type=checkbox]:checked')]
-    .map(el => parseInt(el.dataset.tabId))
-    .filter(id => !isNaN(id));
-}
-
-
-
+const app = document.getElementById('app');
+const search = createSearch({
+  app, home: init, setKeyHandler, keyHints, attachHintsToggle,
+  showPreview: options => showChecklist({ ...options, keyHints, attachHintsToggle }),
+  showResults: options => showChecklist({
+    ...options, app, setKeyHandler, keyHints, attachHintsToggle,
+  }),
+});
 init();
