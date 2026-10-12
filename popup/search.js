@@ -64,7 +64,9 @@ export function createSearch({ app, home, setKeyHandler, showResults, showPrevie
       setKeyHandler: fn => { previewHandler = fn; },
     });
     input.addEventListener('keydown', e => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'j' && e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !e.isComposing) {
+        e.preventDefault(); form.requestSubmit();
+      } else if (e.key === 'ArrowDown') {
         e.preventDefault(); app.querySelector('#search-preview input[type=checkbox]')?.focus();
       }
     });

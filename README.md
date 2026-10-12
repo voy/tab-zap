@@ -38,7 +38,8 @@ close checked tabs, and `e` to close the focused tab. Results start checked;
 deselect exceptions with `x` or Space before pressing `d`.
 Search results use the same order: current tab first, then alphabetical by title.
 Automatic search updates the checklist below the query without moving focus.
-Enter moves into the results, reusing the displayed matches without another request.
+Enter or Ctrl+j moves into the results, reusing the displayed matches without another request.
+Ctrl+j is an alias for Enter in the search field, including immediate searches and retries.
 Earlier queries are cached until you leave search; closed, navigated, or pinned tabs
 are removed when cached matches are displayed again.
 Nothing closes automatically. `/` edits the last query; Escape cancels editing
