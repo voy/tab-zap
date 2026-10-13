@@ -2,3 +2,5 @@ node_modules/
 popup/popup.bundle.js
 background/background.bundle.js
 tab-zap.zip
+output/
+.DS_Store
