@@ -3,8 +3,6 @@ import { esc, trunc, formatShortcut, tabCount, renderLabel } from '../src/utils.
 import { createSearch } from './search.js';
 import { showChecklist } from './checklist.js';
 
-const SEARCH_ONLY = true;
-
 const STRATEGY_LABELS = {
   hostname: { text: 'host', tip: 'All tabs on the same hostname' },
   peer:     { text: 'peer', tip: 'All tabs on this hostname' },
@@ -16,17 +14,28 @@ const STRATEGY_LABELS = {
 let shortcutHint = '';
 let hintsVisible = false;
 
+async function loadHints() {
+  const stored = await chrome.storage.local.get(['hintsVisible', 'hintsSeenOnce']);
+  if (!stored.hintsSeenOnce) {
+    hintsVisible = true;
+    chrome.storage.local.set({ hintsSeenOnce: true, hintsVisible: true });
+  } else {
+    hintsVisible = stored.hintsVisible ?? false;
+  }
+}
+
 async function init() {
+  try {
+    const [, { jevApiKey }] = await Promise.all([loadHints(), chrome.storage.local.get('jevApiKey')]);
+    if (typeof jevApiKey === 'string' && jevApiKey.trim()) return search.open(() => window.close());
+  } catch {}
+  showGroups();
+}
+
+async function showGroups() {
   const app = document.getElementById('app');
   try {
-    const stored = await chrome.storage.local.get(['hintsVisible', 'hintsSeenOnce']);
-    if (!stored.hintsSeenOnce) {
-      hintsVisible = true;
-      chrome.storage.local.set({ hintsSeenOnce: true, hintsVisible: true });
-    } else {
-      hintsVisible = stored.hintsVisible ?? false;
-    }
-    if (SEARCH_ONLY) return search.open(() => window.close());
+    await loadHints();
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab) return;
 
@@ -196,7 +205,7 @@ function renderGroupList(app, activeTab, groups, checkState, topGroups = [], oth
         if (e.key === 'D') return;
         (async () => {
           try { await chrome.tabs.remove(otherGroup.tabs.map(t => t.id)); } catch {}
-          init();
+          showGroups();
         })();
       } else if (isBig) {
         if (e.key === 'D') return;
@@ -247,7 +256,7 @@ function renderTopChecklist(app, activeTab, group, topI, groups, checkState, top
   showChecklist({
     app, title: group.label, tabs: group.tabs, activeTab, checkState, stateKey: `top-${topI}`,
     back: () => renderGroupList(app, activeTab, groups, checkState, topGroups, otherGroup, topI),
-    refresh: init, setKeyHandler, keyHints, attachHintsToggle,
+    refresh: showGroups, setKeyHandler, keyHints, attachHintsToggle,
   });
 }
 
@@ -256,13 +265,13 @@ function renderChecklist(app, activeTab, group, back, checkState, stateKey) {
     ? [activeTab, ...group.tabs] : group.tabs;
   showChecklist({
     app, title: group.label, tabs, activeTab, back, checkState, stateKey,
-    defaultChecked: stateKey !== 'other', refresh: init, setKeyHandler, keyHints, attachHintsToggle,
+    defaultChecked: stateKey !== 'other', refresh: showGroups, setKeyHandler, keyHints, attachHintsToggle,
   });
 }
 
 let activeKeyHandler = null;
-let resumeView = init;
-function setKeyHandler(fn, resume = init) {
+let resumeView = showGroups;
+function setKeyHandler(fn, resume = showGroups) {
   resumeView = resume;
   if (activeKeyHandler) document.removeEventListener('keydown', activeKeyHandler);
   activeKeyHandler = e => {
@@ -279,7 +288,7 @@ function setKeyHandler(fn, resume = init) {
 
 const app = document.getElementById('app');
 const search = createSearch({
-  app, home: init, setKeyHandler, keyHints, attachHintsToggle,
+  app, home: showGroups, setKeyHandler, keyHints, attachHintsToggle,
   showPreview: options => showChecklist({ ...options, keyHints, attachHintsToggle }),
   showResults: options => showChecklist({
     ...options, app, setKeyHandler, keyHints, attachHintsToggle,

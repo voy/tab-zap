@@ -7,3 +7,5 @@ Need to be more selective? Open any group to see a checklist and uncheck the tab
 Fully keyboard-driven: navigate with arrow keys, or vim-style bindings if you're that way inclined. Press ? to see all shortcuts.
 
 No setup, no folders, no fuss. Your browser is not a to-do list — Tab Zap helps you treat it like one less thing to worry about.
+
+Optional: add a Jev API key in settings and Tab Zap opens in natural-language search instead — type "old AI tabs" or "tabs unused for 3 days", review the matches, close them. Without a key everything stays local.

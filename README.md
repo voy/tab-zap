@@ -1,12 +1,27 @@
 # Tab Zap
 
-A keyboard-driven Chrome extension for bulk-closing tabs. Describe the tabs you want gone in plain English, review the matches, and close them in a few keystrokes.
+A keyboard-driven Chrome extension for bulk-closing tabs. Open it with `⌘⇧Z` / `⌃⇧Z` or the extension icon.
 
-Open it with `⌘⇧Z` / `⌃⇧Z` or the extension icon.
+- **Groups (default):** tabs grouped by site, plus the biggest clusters across your window. No setup.
+- **Search (optional):** add a [Jev](https://docs.typesafe.ai/api) key and the popup opens in natural-language search instead. Describe the tabs to close, review the matches, close them.
+
+The landing screen follows the key: saved key opens search, no key opens groups. Remove the key to go back.
+
+## Groups
+
+| Badge | Meaning |
+|-------|---------|
+| `host` | Same hostname as the current tab |
+| `peer` | Sibling subdomain of the same site |
+| `site` | Any subdomain of the same domain |
+| `big` | One of the largest clusters in the window |
+| `etc` | Everything else, oldest first |
+
+`d` closes a group (and the current tab), `D` keeps the current tab, `l` opens it as a checklist.
 
 ## Search
 
-Press `/` and describe what to close: "old AI tabs", "tabs unused for 3 days", "new tabs". Matching is done by [Jev](https://docs.typesafe.ai/api) from tab titles and URLs, optionally page meta descriptions.
+Press `/` and describe what to close: "old AI tabs", "tabs unused for 3 days", "new tabs". Matching is done by Jev from tab titles and URLs, optionally page meta descriptions.
 
 - Results are a checklist, pre-checked. Deselect exceptions, then press `d`.
 - Nothing closes without you pressing a key.
@@ -22,8 +37,6 @@ Press `/` and describe what to close: "old AI tabs", "tabs unused for 3 days", "
 The key lives in `chrome.storage.local` (not synced, not in the build, not encrypted). Remove it with `await chrome.storage.local.remove('jevApiKey')` in the service worker console.
 
 **Use page descriptions** is off by default. Enabling it asks for optional scripting and site access so Tab Zap can read `meta[name="description"]`. Declining keeps title/URL search working.
-
-Domain grouping (`host` / `peer` / `site`, plus top groups) is currently disabled. Set `SEARCH_ONLY` to `false` in `popup/popup.js` to bring it back.
 
 ## Keys
 
